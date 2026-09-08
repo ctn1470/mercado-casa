@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta name="theme-color" content="#f6f5f1"/>
+  <title>Mercado Casa</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div><div class="eyebrow">INVENTARIO FAMILIAR</div><h1>Mercado Casa</h1></div>
+      <button id="userBtn" class="ghost"></button>
+    </header>
+    <nav class="tabs">
+      <button class="tab active" data-view="inventory">Inventario</button>
+      <button class="tab" data-view="shopping">Compras <span id="shoppingBadge" class="badge">0</span></button>
+      <button class="tab" data-view="stores">Tiendas</button>
+    </nav>
+    <main>
+      <section id="inventoryView" class="view active">
+        <div class="summary-grid">
+          <div class="summary"><strong id="countEnough">0</strong><span>Hay suficiente</span></div>
+          <div class="summary"><strong id="countLow">0</strong><span>Queda poco</span></div>
+          <div class="summary"><strong id="countOut">0</strong><span>Se acabó</span></div>
+          <div class="summary"><strong id="countBuy">0</strong><span>Para comprar</span></div>
+        </div>
+        <div class="toolbar">
+          <input id="searchInput" placeholder="Buscar producto…"/>
+          <select id="categoryFilter"><option value="">Todas las categorías</option></select>
+          <button id="newProductBtn" class="primary">+ Producto</button>
+        </div>
+        <div id="inventoryList" class="cards"></div>
+      </section>
+
+      <section id="shoppingView" class="view">
+        <div class="section-head">
+          <div><div class="eyebrow">LISTA ACTIVA</div><h2>Compras</h2></div>
+          <select id="storeFilter"><option value="">Todas las tiendas</option></select>
+        </div>
+        <div class="priority-block">
+          <h3>Prioridad alta <span id="highCount" class="badge danger">0</span></h3>
+          <div id="highList" class="shopping-list"></div>
+        </div>
+        <div class="priority-block">
+          <h3>Prioridad media <span id="mediumCount" class="badge warn">0</span></h3>
+          <div id="mediumList" class="shopping-list"></div>
+        </div>
+      </section>
+
+      <section id="storesView" class="view">
+        <div class="section-head">
+          <div><div class="eyebrow">CONFIGURACIÓN</div><h2>Tiendas</h2></div>
+          <button id="newStoreBtn" class="primary">+ Tienda</button>
+        </div>
+        <div id="storesList" class="store-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="nameDialog">
+    <form method="dialog" id="nameForm" class="dialog-card">
+      <h2>¿Quién está usando Mercado?</h2>
+      <p>El nombre se guarda en este dispositivo para identificar los cambios.</p>
+      <input id="nameInput" required maxlength="40" placeholder="Tu nombre"/>
+      <button class="primary" value="default">Continuar</button>
+    </form>
+  </dialog>
+
+  <dialog id="productDialog">
+    <form method="dialog" id="productForm" class="dialog-card">
+      <h2 id="productDialogTitle">Nuevo producto</h2>
+      <input type="hidden" id="productId"/>
+      <label>Producto<input id="productName" required maxlength="100"/></label>
+      <label>Categoría<select id="productCategory" required></select></label>
+      <fieldset><legend>Tiendas habituales</legend><div id="productStores" class="check-grid"></div></fieldset>
+      <div class="dialog-actions">
+        <button class="ghost" value="cancel">Cancelar</button>
+        <button class="primary" value="default">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="lowDialog">
+    <form method="dialog" class="dialog-card">
+      <h2>Queda poco</h2>
+      <p>¿Quieres agregar este producto a la lista de compras con prioridad media?</p>
+      <div class="dialog-actions">
+        <button id="lowNo" class="ghost" value="cancel">No</button>
+        <button id="lowYes" class="primary" value="default">Sí, agregar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="storeDialog">
+    <form method="dialog" id="storeForm" class="dialog-card">
+      <h2>Nueva tienda</h2>
+      <label>Nombre<input id="storeName" required maxlength="80"/></label>
+      <div class="dialog-actions">
+        <button class="ghost" value="cancel">Cancelar</button>
+        <button class="primary" value="default">Crear</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
