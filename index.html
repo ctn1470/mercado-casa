@@ -19,7 +19,13 @@
 </nav>
 <main>
 <section id="inventoryView" class="view active">
-<div class="summary-grid"><div class="summary"><strong id="countEnough">0</strong><span>Hay suficiente</span></div><div class="summary"><strong id="countLow">0</strong><span>Queda poco</span></div><div class="summary"><strong id="countOut">0</strong><span>Se acabó</span></div><div class="summary"><strong id="countBuy">0</strong><span>Para comprar</span></div></div>
+<div class="summary-grid">
+<button type="button" class="summary" data-status="enough"><strong id="countEnough">0</strong><span>Hay suficiente</span></button>
+<button type="button" class="summary" data-status="low"><strong id="countLow">0</strong><span>Queda poco</span></button>
+<button type="button" class="summary" data-status="out"><strong id="countOut">0</strong><span>Se acabó</span></button>
+<button type="button" class="summary" id="summaryBuy"><strong id="countBuy">0</strong><span>Para comprar</span></button>
+</div>
+<div class="filter-state-row"><button type="button" id="clearStatusFilter" class="ghost small hidden">Ver todos</button></div>
 <div class="toolbar"><input id="searchInput" placeholder="Buscar producto…"/><select id="categoryFilter"><option value="">Todas las categorías</option></select><button id="newProductBtn" class="primary">+ Producto</button></div><div id="inventoryList" class="cards"></div>
 </section>
 <section id="shoppingView" class="view"><div class="section-head"><div><div class="eyebrow">LISTA ACTIVA</div><h2>Compras</h2></div><select id="storeFilter"><option value="">Todas las tiendas</option></select></div><div class="priority-block"><h3>Prioridad alta <span id="highCount" class="badge danger">0</span></h3><div id="highList" class="shopping-list"></div></div><div class="priority-block"><h3>Prioridad media <span id="mediumCount" class="badge warn">0</span></h3><div id="mediumList" class="shopping-list"></div></div></section>

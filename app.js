@@ -2,7 +2,7 @@ const cfg=window.MERCADO_CONFIG||{};
 const configured=cfg.supabaseUrl&&!cfg.supabaseUrl.includes("PEGA_AQUI")&&cfg.supabaseAnonKey&&!cfg.supabaseAnonKey.includes("PEGA_AQUI");
 if(!configured){document.body.innerHTML='<div style="font-family:sans-serif;padding:40px;max-width:700px;margin:auto"><h1>Falta conectar Supabase</h1><p>Revisa config.js.</p></div>';throw new Error("Supabase no configurado")}
 const sb=supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
-let state={products:[],stores:[],categories:[],lowProduct:null};
+let state={products:[],stores:[],categories:[],lowProduct:null,statusFilter:""};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const userName=()=>localStorage.getItem("mercado_user")||"";
 function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -32,11 +32,13 @@ function productCard(p){
  return `<article class="product-card"><div class="product-top"><div><div class="product-name">${esc(p.name)}</div><div class="meta">${esc(catName)} · Último cambio: ${esc(p.updated_by||"—")}</div></div><button class="edit" onclick="openEditProduct('${p.id}')">Editar</button></div><div class="store-tags"><span class="mode-tag ${optional?"optional":""}">${optional?"Reposición opcional":"Reposición automática"}</span>${st.length?st.map(x=>`<span class="tag">${esc(x)}</span>`).join(""):'<span class="meta">Sin tienda asignada</span>'}</div><div class="statuses"><button class="status-btn out ${p.status==="out"?"active":""}" onclick="setStatus('${p.id}','out')">Se acabó</button><button class="status-btn low ${p.status==="low"?"active":""}" onclick="setStatus('${p.id}','low')">Queda poco</button><button class="status-btn enough ${p.status==="enough"?"active":""}" onclick="setStatus('${p.id}','enough')">Hay suficiente</button></div>${optional&&!isInShopping(p)?`<button class="manual-buy" onclick="addManualShopping('${p.id}')">+ Agregar a compras</button>`:""}</article>`
 }
 function renderInventory(){
- const q=$("#searchInput").value.toLowerCase().trim(),cat=$("#categoryFilter").value;
- const products=activeProducts();const filtered=products.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!cat||p.category_id===cat));
+ const q=$("#searchInput").value.toLowerCase().trim(),cat=$("#categoryFilter").value,status=state.statusFilter;
+ const products=activeProducts();const filtered=products.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!cat||p.category_id===cat)&&(!status||p.status===status));
  $("#inventoryList").innerHTML=filtered.length?filtered.map(productCard).join(""):'<div class="empty">No hay productos con estos filtros.</div>';
  const counts={enough:0,low:0,out:0,buy:0};products.forEach(p=>{counts[p.status]=(counts[p.status]||0)+1;if(isInShopping(p))counts.buy++});
- $("#countEnough").textContent=counts.enough;$("#countLow").textContent=counts.low;$("#countOut").textContent=counts.out;$("#countBuy").textContent=counts.buy;$("#shoppingBadge").textContent=counts.buy
+ $("#countEnough").textContent=counts.enough;$("#countLow").textContent=counts.low;$("#countOut").textContent=counts.out;$("#countBuy").textContent=counts.buy;$("#shoppingBadge").textContent=counts.buy;
+ $$(".summary[data-status]").forEach(card=>card.classList.toggle("active",card.dataset.status===status));
+ $("#clearStatusFilter").classList.toggle("hidden",!status)
 }
 function renderShopping(){
  const sf=$("#storeFilter").value;const rows=activeProducts().filter(p=>{const a=activeShop(p);if(!a)return false;if(!sf)return true;return(p.product_stores||[]).some(x=>x.store_id===sf)});
@@ -73,6 +75,18 @@ $("#newCategoryBtn").onclick=()=>{$("#categoryDialogTitle").textContent="Nueva c
 function editCategory(id){const c=state.categories.find(x=>x.id===id);if(!c)return;$("#categoryDialogTitle").textContent="Editar categoría";$("#categoryId").value=id;$("#categoryName").value=c.name;$("#categoryDialog").showModal()}
 $("#categoryForm").addEventListener("submit",async e=>{e.preventDefault();const id=$("#categoryId").value,name=$("#categoryName").value.trim();if(!name)return;const q=id?sb.from("categories").update({name}).eq("id",id):sb.from("categories").insert({name});const{error}=await q;if(error)return toast(error.code==="23505"?"La categoría ya existe":"No se pudo guardar");$("#categoryDialog").close();toast("Categoría guardada");await loadAll()});
 async function deleteCategory(id){const n=state.products.filter(p=>p.category_id===id).length;if(n>0)return toast("Primero cambia de categoría los productos asociados");if(!confirm("¿Eliminar esta categoría?"))return;const{error}=await sb.from("categories").delete().eq("id",id);if(error)return toast("No se pudo eliminar");toast("Categoría eliminada");await loadAll()}
+function showView(view){
+ const tab=$(`.tab[data-view="${view}"]`);if(!tab)return;
+ $$('.tab').forEach(x=>x.classList.remove('active'));tab.classList.add('active');
+ $$('.view').forEach(x=>x.classList.remove('active'));$('#'+view+'View').classList.add('active')
+}
+function setStatusFilter(status){
+ state.statusFilter=state.statusFilter===status?"":status;
+ showView("inventory");renderInventory()
+}
+$$(".summary[data-status]").forEach(card=>card.onclick=()=>setStatusFilter(card.dataset.status));
+$("#summaryBuy").onclick=()=>showView("shopping");
+$("#clearStatusFilter").onclick=()=>{state.statusFilter="";renderInventory()};
 $$('.tab').forEach(b=>b.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');$$('.view').forEach(x=>x.classList.remove('active'));$('#'+b.dataset.view+'View').classList.add('active')});
 $("#searchInput").oninput=renderInventory;$("#categoryFilter").onchange=renderInventory;$("#storeFilter").onchange=renderShopping;$("#userBtn").onclick=()=>{$("#nameInput").value=userName();$("#nameDialog").showModal()};
 $("#nameForm").addEventListener("submit",e=>{e.preventDefault();const n=$("#nameInput").value.trim();if(!n)return;localStorage.setItem("mercado_user",n);$("#nameDialog").close();renderAll()});
