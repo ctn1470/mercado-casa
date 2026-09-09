@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
   <meta name="theme-color" content="#f6f5f1"/>
   <title>Mercado Casa</title>
-  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="styles.css?v=2.2"/>
 </head>
 <body>
 <div id="app">
@@ -38,5 +38,5 @@
 <dialog id="lowDialog"><form method="dialog" class="dialog-card"><h2>Queda poco</h2><p>¿Quieres agregar este producto a la lista de compras con prioridad media?</p><div class="dialog-actions"><button id="lowNo" class="ghost" value="cancel">No</button><button id="lowYes" class="primary" value="default">Sí, agregar</button></div></form></dialog>
 <dialog id="storeDialog"><form method="dialog" id="storeForm" class="dialog-card"><h2 id="storeDialogTitle">Nueva tienda</h2><input type="hidden" id="storeId"/><label>Nombre<input id="storeName" required maxlength="80"/></label><div class="dialog-actions"><button class="ghost" value="cancel">Cancelar</button><button class="primary" value="default">Guardar</button></div></form></dialog>
 <dialog id="categoryDialog"><form method="dialog" id="categoryForm" class="dialog-card"><h2 id="categoryDialogTitle">Nueva categoría</h2><input type="hidden" id="categoryId"/><label>Nombre<input id="categoryName" required maxlength="80"/></label><div class="dialog-actions"><button class="ghost" value="cancel">Cancelar</button><button class="primary" value="default">Guardar</button></div></form></dialog>
-<div id="toast" class="toast"></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js"></script>
+<div id="toast" class="toast"></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js?v=2.2"></script>
 </body></html>
