@@ -99,3 +99,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 @media (max-width: 380px) {
  .toolbar { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* V2.4 complete catalog */
+.catalog-search { margin: 16px 0; }
+.catalog-search input { width: 100%; padding-right: 48px; }
+#deleteProductError { color: var(--danger); }
+button:disabled { opacity: .6; cursor: wait; }
+.row-actions > button { max-width: 100%; overflow-wrap: anywhere; }

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
   <meta name="theme-color" content="#f6f5f1"/>
   <title>Mercado Casa</title>
-  <link rel="stylesheet" href="styles.css?v=2.3"/>
+  <link rel="stylesheet" href="styles.css?v=2.4"/>
 </head>
 <body>
 <div id="app">
@@ -16,6 +16,7 @@
 <button class="tab" data-view="stores">Tiendas</button>
 <button class="tab" data-view="categories">Categorías</button>
 <button class="tab" data-view="archived">Archivados <span id="archivedBadge" class="badge">0</span></button>
+<button class="tab" data-view="catalog">Todos los productos</button>
 </nav>
 <main>
 <section id="inventoryView" class="view active">
@@ -32,11 +33,22 @@
 <section id="storesView" class="view"><div class="section-head"><div><div class="eyebrow">CONFIGURACIÓN</div><h2>Tiendas</h2></div><button id="newStoreBtn" class="primary">+ Tienda</button></div><div id="storesList" class="store-list"></div></section>
 <section id="categoriesView" class="view"><div class="section-head"><div><div class="eyebrow">CONFIGURACIÓN</div><h2>Categorías</h2></div><button id="newCategoryBtn" class="primary">+ Categoría</button></div><div id="categoriesList" class="store-list"></div></section>
 <section id="archivedView" class="view"><div class="section-head"><div><div class="eyebrow">CATÁLOGO</div><h2>Productos archivados</h2></div></div><div id="archivedList" class="cards"></div></section>
-</main></div>
+<section id="catalogView" class="view">
+<div class="section-head"><div><div class="eyebrow">CATÁLOGO COMPLETO</div><h2>Todos los productos</h2></div></div>
+<p>Productos activos y archivados, en cualquier estado de inventario.</p>
+<div class="search-field catalog-search"><input id="catalogSearch" aria-label="Buscar en todos los productos" placeholder="Buscar en todos los productos…"/><button type="button" id="clearCatalogSearch" class="clear-search hidden" aria-label="Borrar búsqueda del catálogo">×</button></div>
+<p id="catalogCount" class="meta" aria-live="polite"></p><div id="catalogList" class="cards"></div>
+</section></main></div>
 <dialog id="nameDialog"><form method="dialog" id="nameForm" class="dialog-card"><h2>¿Quién está usando Mercado?</h2><p>El nombre se guarda en este dispositivo para identificar los cambios.</p><input id="nameInput" required maxlength="40" placeholder="Tu nombre"/><button class="primary" value="default">Continuar</button></form></dialog>
 <dialog id="productDialog"><form method="dialog" id="productForm" class="dialog-card"><h2 id="productDialogTitle">Nuevo producto</h2><input type="hidden" id="productId"/><label>Producto<input id="productName" required maxlength="100"/></label><label>Categoría<select id="productCategory" required></select></label><label>Reposición<select id="productReplenishment"><option value="automatic">Automática</option><option value="optional">Opcional</option></select></label><fieldset><legend>Tiendas habituales</legend><div id="productStores" class="check-grid"></div></fieldset><div id="archiveArea" class="danger-zone hidden"><button type="button" id="archiveProductBtn" class="danger-btn">Archivar producto</button></div><div class="dialog-actions"><button class="ghost" value="cancel">Cancelar</button><button class="primary" value="default">Guardar</button></div></form></dialog>
 <dialog id="lowDialog"><form method="dialog" class="dialog-card"><h2>Queda poco</h2><p>¿Quieres agregar este producto a la lista de compras con prioridad media?</p><div class="dialog-actions"><button id="lowNo" class="ghost" value="cancel">No</button><button id="lowYes" class="primary" value="default">Sí, agregar</button></div></form></dialog>
 <dialog id="storeDialog"><form method="dialog" id="storeForm" class="dialog-card"><h2 id="storeDialogTitle">Nueva tienda</h2><input type="hidden" id="storeId"/><label>Nombre<input id="storeName" required maxlength="80"/></label><div class="dialog-actions"><button class="ghost" value="cancel">Cancelar</button><button class="primary" value="default">Guardar</button></div></form></dialog>
 <dialog id="categoryDialog"><form method="dialog" id="categoryForm" class="dialog-card"><h2 id="categoryDialogTitle">Nueva categoría</h2><input type="hidden" id="categoryId"/><label>Nombre<input id="categoryName" required maxlength="80"/></label><div class="dialog-actions"><button class="ghost" value="cancel">Cancelar</button><button class="primary" value="default">Guardar</button></div></form></dialog>
-<div id="toast" class="toast"></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js?v=2.3"></script>
+<dialog id="deleteProductDialog" aria-labelledby="deleteProductTitle"><form method="dialog" id="deleteProductForm" class="dialog-card">
+<h2 id="deleteProductTitle">Eliminar definitivamente</h2><p id="deleteProductMessage"></p>
+<p>Esta acción no se puede deshacer. Se eliminará el producto y, si la base tiene eliminación en cascada, sus asociaciones e historial de compras. Puedes cancelar y archivarlo para conservarlo.</p>
+<p id="deleteProductError" role="alert" class="hidden"></p>
+<div class="dialog-actions"><button type="button" id="cancelDeleteProduct" class="ghost">Cancelar</button><button type="submit" id="confirmDeleteProduct" class="danger-btn">Eliminar definitivamente</button></div>
+</form></dialog>
+<div id="toast" class="toast"></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js?v=2.4"></script>
 </body></html>

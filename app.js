@@ -18,7 +18,7 @@ async function loadAll(){
  if(se||ce||pe){console.error(se||ce||pe);toast("No se pudo cargar la información");return}
  state.stores=stores||[];state.categories=cats||[];state.products=products||[];renderAll()
 }
-function renderAll(){renderFilters();renderInventory();renderShopping();renderStores();renderCategories();renderArchived();renderProductStoreChecks();$("#userBtn").textContent=userName()?userName()+" ▾":"Usuario"}
+function renderAll(){renderFilters();renderInventory();renderShopping();renderStores();renderCategories();renderArchived();renderCatalog();renderProductStoreChecks();$("#userBtn").textContent=userName()?userName()+" ▾":"Usuario"}
 function renderFilters(){
  const currentCat=$("#categoryFilter").value,currentStore=$("#storeFilter").value,currentInventoryStore=$("#inventoryStoreFilter").value;
  $("#categoryFilter").innerHTML='<option value="">Todas las categorías</option>'+state.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
@@ -97,3 +97,42 @@ $("#searchInput").oninput=renderInventory;$("#categoryFilter").onchange=renderIn
 $("#nameForm").addEventListener("submit",e=>{e.preventDefault();const n=$("#nameInput").value.trim();if(!n)return;localStorage.setItem("mercado_user",n);$("#nameDialog").close();renderAll()});
 function startRealtime(){let timer;const refresh=()=>{clearTimeout(timer);timer=setTimeout(loadAll,250)};sb.channel('mercado-casa-v2').on('postgres_changes',{event:'*',schema:'public',table:'products'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'shopping_list'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'product_stores'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'stores'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'categories'},refresh).subscribe()}
 if(!userName())$("#nameDialog").showModal();loadAll();startRealtime();
+
+// Complete catalog is independent of the inventory filters.
+function renderCatalog(){
+ const query=$("#catalogSearch").value.trim().toLowerCase();
+ const products=state.products.filter(p=>!query||p.name.toLowerCase().includes(query));
+ $("#clearCatalogSearch").classList.toggle("hidden",!$("#catalogSearch").value);
+ $("#catalogCount").textContent=`${products.length} de ${state.products.length} productos`;
+ const labels={enough:"Hay suficiente",low:"Queda poco",out:"Se acabó"};
+ $("#catalogList").innerHTML=products.length?products.map(p=>`<article class="product-card"><div class="product-name">${esc(p.name)}</div><div class="meta">${esc(state.categories.find(c=>c.id===p.category_id)?.name||"Sin categoría")}</div><div class="store-tags"><span class="tag">${p.archived?"Archivado":"Activo"}</span><span class="tag">${esc(labels[p.status]||p.status)}</span>${storeNames(p).map(s=>`<span class="tag">${esc(s)}</span>`).join("")}</div><div class="row-actions">${p.archived?`<button class="ghost" onclick="restoreProduct('${p.id}')">Reactivar</button>`:`<button class="ghost" onclick="openEditProduct('${p.id}')">Editar</button>`}<button class="danger-btn" onclick="openDeleteProduct('${p.id}')">Eliminar definitivamente</button></div></article>`).join(""):'<div class="empty">No hay productos con esta búsqueda.</div>';
+}
+let deleteProductId=null,deleteProductBusy=false;
+function openDeleteProduct(id){
+ const product=state.products.find(p=>p.id===id);if(!product)return;
+ deleteProductId=id;$("#deleteProductMessage").textContent=`¿Eliminar “${product.name}”?`;
+ $("#deleteProductError").classList.add("hidden");
+ $("#deleteProductDialog").showModal();$("#cancelDeleteProduct").focus();
+}
+$("#cancelDeleteProduct").onclick=()=>{if(!deleteProductBusy)$("#deleteProductDialog").close()};
+$("#deleteProductDialog").addEventListener("cancel",e=>{if(deleteProductBusy)e.preventDefault()});
+$("#deleteProductDialog").addEventListener("close",()=>{deleteProductId=null});
+$("#deleteProductForm").addEventListener("submit",async e=>{
+ e.preventDefault();if(!deleteProductId||deleteProductBusy)return;
+ const id=deleteProductId;deleteProductBusy=true;
+ $("#confirmDeleteProduct").disabled=true;$("#cancelDeleteProduct").disabled=true;
+ $("#deleteProductError").classList.add("hidden");
+ try{
+  // One database statement: constraints/cascades remain atomic. Never delete child rows separately.
+  const {data,error}=await sb.from("products").delete().eq("id",id).select("id");
+  if(error)throw error;
+  if(!data?.length)throw new Error("No se confirmó la eliminación. Actualiza el catálogo y comprueba los permisos.");
+  if(state.lowProduct===id){state.lowProduct=null;$("#lowDialog").close()}
+  $("#deleteProductDialog").close();toast("Producto eliminado definitivamente");await loadAll();
+ }catch(error){
+  $("#deleteProductError").textContent=error.code==="23503"?"La base de datos impide eliminar este producto porque tiene registros relacionados. No se borró ningún registro. Puedes archivarlo o revisar las relaciones de la base.":error.message||"No se pudo eliminar. Comprueba la conexión y vuelve a cargar el catálogo antes de reintentar.";
+  $("#deleteProductError").classList.remove("hidden");
+ }finally{deleteProductBusy=false;$("#confirmDeleteProduct").disabled=false;$("#cancelDeleteProduct").disabled=false}
+});
+$("#catalogSearch").oninput=renderCatalog;
+$("#clearCatalogSearch").onclick=()=>{$("#catalogSearch").value="";renderCatalog();$("#catalogSearch").focus()};
