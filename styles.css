@@ -106,3 +106,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 #deleteProductError { color: var(--danger); }
 button:disabled { opacity: .6; cursor: wait; }
 .row-actions > button { max-width: 100%; overflow-wrap: anywhere; }
+
+/* V2.5 navigation and grouped settings */
+.parameter-group { margin-top: 28px; }
+.danger-zone { display: flex; flex-wrap: wrap; gap: 10px; }
+.danger-zone button { max-width: 100%; }

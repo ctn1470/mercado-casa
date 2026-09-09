@@ -30,15 +30,17 @@ function renderFilters(){
 }
 function renderProductStoreChecks(selected=[]){$("#productStores").innerHTML=state.stores.map(s=>`<label><input type="checkbox" value="${s.id}" ${selected.includes(s.id)?"checked":""}/> ${esc(s.name)}</label>`).join("")}
 function productCard(p){
+ if(p.archived)return `<article class="product-card"><div class="product-name">${esc(p.name)}</div><div class="meta">${esc(state.categories.find(c=>c.id===p.category_id)?.name||"")}</div><div class="store-tags"><span class="tag">Archivado</span><span class="tag">${esc({enough:"Hay suficiente",low:"Queda poco",out:"Se acabó"}[p.status]||p.status)}</span>${storeNames(p).map(s=>`<span class="tag">${esc(s)}</span>`).join("")}</div><div class="row-actions"><button class="ghost" onclick="restoreProduct('${p.id}')">Reactivar</button><button class="danger-btn" onclick="openDeleteProduct('${p.id}')">Eliminar definitivamente</button></div></article>`;
+
  const st=storeNames(p),catName=state.categories.find(c=>c.id===p.category_id)?.name||"";const optional=p.replenishment_type==="optional";
  return `<article class="product-card"><div class="product-top"><div><div class="product-name">${esc(p.name)}</div><div class="meta">${esc(catName)} · Último cambio: ${esc(p.updated_by||"—")}</div></div><button class="edit" onclick="openEditProduct('${p.id}')">Editar</button></div><div class="store-tags"><span class="mode-tag ${optional?"optional":""}">${optional?"Reposición opcional":"Reposición automática"}</span>${st.length?st.map(x=>`<span class="tag">${esc(x)}</span>`).join(""):'<span class="meta">Sin tienda asignada</span>'}</div><div class="statuses"><button class="status-btn out ${p.status==="out"?"active":""}" onclick="setStatus('${p.id}','out')">Se acabó</button><button class="status-btn low ${p.status==="low"?"active":""}" onclick="setStatus('${p.id}','low')">Queda poco</button><button class="status-btn enough ${p.status==="enough"?"active":""}" onclick="setStatus('${p.id}','enough')">Hay suficiente</button></div>${optional&&!isInShopping(p)?`<button class="manual-buy" onclick="addManualShopping('${p.id}')">+ Agregar a compras</button>`:""}</article>`
 }
 function renderInventory(){
  const q=$("#searchInput").value.toLowerCase().trim(),cat=$("#categoryFilter").value,status=state.statusFilter,store=$("#inventoryStoreFilter").value;
  $("#clearSearch").classList.toggle("hidden",!$("#searchInput").value);
- const products=activeProducts();const filtered=products.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!cat||p.category_id===cat)&&(!status||p.status===status)&&(!store||(p.product_stores||[]).some(s=>s.store_id===store)));
+ const products=state.products;const filtered=products.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!cat||p.category_id===cat)&&(!status||p.status===status)&&(!store||(p.product_stores||[]).some(s=>s.store_id===store)));
  $("#inventoryList").innerHTML=filtered.length?filtered.map(productCard).join(""):'<div class="empty">No hay productos con estos filtros.</div>';
- const counts={enough:0,low:0,out:0,buy:0};products.forEach(p=>{counts[p.status]=(counts[p.status]||0)+1;if(isInShopping(p))counts.buy++});
+ const counts={enough:0,low:0,out:0,buy:0};products.forEach(p=>{counts[p.status]=(counts[p.status]||0)+1;if(!p.archived&&isInShopping(p))counts.buy++});
  $("#countEnough").textContent=counts.enough;$("#countLow").textContent=counts.low;$("#countOut").textContent=counts.out;$("#countBuy").textContent=counts.buy;$("#shoppingBadge").textContent=counts.buy;
  $$(".summary[data-status]").forEach(card=>card.classList.toggle("active",card.dataset.status===status));
  $("#clearStatusFilter").classList.toggle("hidden",!status)
@@ -136,3 +138,5 @@ $("#deleteProductForm").addEventListener("submit",async e=>{
 });
 $("#catalogSearch").oninput=renderCatalog;
 $("#clearCatalogSearch").onclick=()=>{$("#catalogSearch").value="";renderCatalog();$("#catalogSearch").focus()};
+
+$("#deleteFromEdit").onclick=()=>{const id=$("#productId").value;$("#productDialog").close();openDeleteProduct(id)};
