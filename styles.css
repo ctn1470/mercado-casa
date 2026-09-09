@@ -84,3 +84,18 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   .summary, .toast { transition: none; }
   .summary:hover { transform: none; }
 }
+
+/* V2.3: search reset and independent inventory store filter. */
+.toolbar { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
+.search-field { position: relative; min-width: 0; }
+.search-field #searchInput { width: 100%; padding-right: 48px; }
+.clear-search { position: absolute; right: 1px; top: 1px; bottom: 1px; width: 44px; min-height: 0; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: 24px; }
+.clear-search:hover { color: var(--ink); background: var(--soft); }
+@media (max-width: 900px) {
+ .toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+ .search-field { grid-column: 1 / -1; }
+ #newProductBtn { grid-column: 1 / -1; }
+}
+@media (max-width: 380px) {
+ .toolbar { grid-template-columns: minmax(0, 1fr); }
+}

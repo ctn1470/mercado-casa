@@ -20,9 +20,11 @@ async function loadAll(){
 }
 function renderAll(){renderFilters();renderInventory();renderShopping();renderStores();renderCategories();renderArchived();renderProductStoreChecks();$("#userBtn").textContent=userName()?userName()+" ▾":"Usuario"}
 function renderFilters(){
- const currentCat=$("#categoryFilter").value,currentStore=$("#storeFilter").value;
+ const currentCat=$("#categoryFilter").value,currentStore=$("#storeFilter").value,currentInventoryStore=$("#inventoryStoreFilter").value;
  $("#categoryFilter").innerHTML='<option value="">Todas las categorías</option>'+state.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
  $("#storeFilter").innerHTML='<option value="">Todas las tiendas</option>'+state.stores.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
+ $("#inventoryStoreFilter").innerHTML=$("#storeFilter").innerHTML;
+ $("#inventoryStoreFilter").value=state.stores.some(s=>s.id===currentInventoryStore)?currentInventoryStore:"";
  $("#productCategory").innerHTML=state.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
  $("#categoryFilter").value=currentCat;$("#storeFilter").value=currentStore
 }
@@ -32,8 +34,9 @@ function productCard(p){
  return `<article class="product-card"><div class="product-top"><div><div class="product-name">${esc(p.name)}</div><div class="meta">${esc(catName)} · Último cambio: ${esc(p.updated_by||"—")}</div></div><button class="edit" onclick="openEditProduct('${p.id}')">Editar</button></div><div class="store-tags"><span class="mode-tag ${optional?"optional":""}">${optional?"Reposición opcional":"Reposición automática"}</span>${st.length?st.map(x=>`<span class="tag">${esc(x)}</span>`).join(""):'<span class="meta">Sin tienda asignada</span>'}</div><div class="statuses"><button class="status-btn out ${p.status==="out"?"active":""}" onclick="setStatus('${p.id}','out')">Se acabó</button><button class="status-btn low ${p.status==="low"?"active":""}" onclick="setStatus('${p.id}','low')">Queda poco</button><button class="status-btn enough ${p.status==="enough"?"active":""}" onclick="setStatus('${p.id}','enough')">Hay suficiente</button></div>${optional&&!isInShopping(p)?`<button class="manual-buy" onclick="addManualShopping('${p.id}')">+ Agregar a compras</button>`:""}</article>`
 }
 function renderInventory(){
- const q=$("#searchInput").value.toLowerCase().trim(),cat=$("#categoryFilter").value,status=state.statusFilter;
- const products=activeProducts();const filtered=products.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!cat||p.category_id===cat)&&(!status||p.status===status));
+ const q=$("#searchInput").value.toLowerCase().trim(),cat=$("#categoryFilter").value,status=state.statusFilter,store=$("#inventoryStoreFilter").value;
+ $("#clearSearch").classList.toggle("hidden",!$("#searchInput").value);
+ const products=activeProducts();const filtered=products.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!cat||p.category_id===cat)&&(!status||p.status===status)&&(!store||(p.product_stores||[]).some(s=>s.store_id===store)));
  $("#inventoryList").innerHTML=filtered.length?filtered.map(productCard).join(""):'<div class="empty">No hay productos con estos filtros.</div>';
  const counts={enough:0,low:0,out:0,buy:0};products.forEach(p=>{counts[p.status]=(counts[p.status]||0)+1;if(isInShopping(p))counts.buy++});
  $("#countEnough").textContent=counts.enough;$("#countLow").textContent=counts.low;$("#countOut").textContent=counts.out;$("#countBuy").textContent=counts.buy;$("#shoppingBadge").textContent=counts.buy;
@@ -88,6 +91,8 @@ $$(".summary[data-status]").forEach(card=>card.onclick=()=>setStatusFilter(card.
 $("#summaryBuy").onclick=()=>showView("shopping");
 $("#clearStatusFilter").onclick=()=>{state.statusFilter="";renderInventory()};
 $$('.tab').forEach(b=>b.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');$$('.view').forEach(x=>x.classList.remove('active'));$('#'+b.dataset.view+'View').classList.add('active')});
+$("#clearSearch").onclick=()=>{$("#searchInput").value="";renderInventory();$("#searchInput").focus()};
+$("#inventoryStoreFilter").onchange=renderInventory;
 $("#searchInput").oninput=renderInventory;$("#categoryFilter").onchange=renderInventory;$("#storeFilter").onchange=renderShopping;$("#userBtn").onclick=()=>{$("#nameInput").value=userName();$("#nameDialog").showModal()};
 $("#nameForm").addEventListener("submit",e=>{e.preventDefault();const n=$("#nameInput").value.trim();if(!n)return;localStorage.setItem("mercado_user",n);$("#nameDialog").close();renderAll()});
 function startRealtime(){let timer;const refresh=()=>{clearTimeout(timer);timer=setTimeout(loadAll,250)};sb.channel('mercado-casa-v2').on('postgres_changes',{event:'*',schema:'public',table:'products'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'shopping_list'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'product_stores'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'stores'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'categories'},refresh).subscribe()}
