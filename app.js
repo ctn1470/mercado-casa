@@ -2,7 +2,7 @@ const cfg=window.MERCADO_CONFIG||{};
 const configured=cfg.supabaseUrl&&!cfg.supabaseUrl.includes("PEGA_AQUI")&&cfg.supabaseAnonKey&&!cfg.supabaseAnonKey.includes("PEGA_AQUI");
 if(!configured){document.body.innerHTML='<div style="font-family:sans-serif;padding:40px;max-width:700px;margin:auto"><h1>Falta conectar Supabase</h1><p>Revisa config.js.</p></div>';throw new Error("Supabase no configurado")}
 const sb=supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
-let state={products:[],stores:[],categories:[],lowProduct:null,statusFilter:""};
+let state={products:[],stores:[],categories:[],lowProduct:null,statusFilter:"",showArchived:false};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const userName=()=>localStorage.getItem("mercado_user")||"";
 function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -38,9 +38,15 @@ function productCard(p){
 function renderInventory(){
  const q=$("#searchInput").value.toLowerCase().trim(),cat=$("#categoryFilter").value,status=state.statusFilter,store=$("#inventoryStoreFilter").value;
  $("#clearSearch").classList.toggle("hidden",!$("#searchInput").value);
- const products=state.products;const filtered=products.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!cat||p.category_id===cat)&&(!status||p.status===status)&&(!store||(p.product_stores||[]).some(s=>s.store_id===store)));
+ const products=state.products.filter(p=>!!p.archived===state.showArchived);
+ $("#productsHeading").textContent=state.showArchived?"Productos archivados":"Productos";
+ $("#toggleArchived").textContent=state.showArchived?"Volver a productos":`Archivados (${state.products.filter(p=>p.archived).length})`;
+ $("#toggleArchived").setAttribute("aria-pressed",String(state.showArchived));
+ $("#newProductBtn").classList.toggle("hidden",state.showArchived);
+ const filtered=products.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!cat||p.category_id===cat)&&(!status||p.status===status)&&(!store||(p.product_stores||[]).some(s=>s.store_id===store)));
  $("#inventoryList").innerHTML=filtered.length?filtered.map(productCard).join(""):'<div class="empty">No hay productos con estos filtros.</div>';
  const counts={enough:0,low:0,out:0,buy:0};products.forEach(p=>{counts[p.status]=(counts[p.status]||0)+1;if(!p.archived&&isInShopping(p))counts.buy++});
+ counts.buy=activeProducts().filter(isInShopping).length;
  $("#countEnough").textContent=counts.enough;$("#countLow").textContent=counts.low;$("#countOut").textContent=counts.out;$("#countBuy").textContent=counts.buy;$("#shoppingBadge").textContent=counts.buy;
  $$(".summary[data-status]").forEach(card=>card.classList.toggle("active",card.dataset.status===status));
  $("#clearStatusFilter").classList.toggle("hidden",!status)
@@ -140,3 +146,10 @@ $("#catalogSearch").oninput=renderCatalog;
 $("#clearCatalogSearch").onclick=()=>{$("#catalogSearch").value="";renderCatalog();$("#catalogSearch").focus()};
 
 $("#deleteFromEdit").onclick=()=>{const id=$("#productId").value;$("#productDialog").close();openDeleteProduct(id)};
+
+$("#toggleArchived").onclick=()=>{
+ state.showArchived=!state.showArchived;
+ state.statusFilter="";
+ $("#searchInput").value="";$("#categoryFilter").value="";$("#inventoryStoreFilter").value="";
+ renderInventory();
+};
