@@ -18,7 +18,7 @@ async function loadAll(){
  if(se||ce||pe){console.error(se||ce||pe);toast("No se pudo cargar la información");return}
  state.stores=stores||[];state.categories=cats||[];state.products=products||[];renderAll()
 }
-function renderAll(){renderFilters();renderInventory();renderShopping();renderStores();renderCategories();renderArchived();renderCatalog();renderProductStoreChecks();$("#userBtn").textContent=userName()?userName()+" ▾":"Usuario"}
+function renderAll(){window.refreshRecipes?.();renderFilters();renderInventory();renderShopping();renderStores();renderCategories();renderArchived();renderCatalog();renderProductStoreChecks();$("#userBtn").textContent=userName()?userName()+" ▾":"Usuario"}
 function renderFilters(){
  const currentCat=$("#categoryFilter").value,currentStore=$("#storeFilter").value,currentInventoryStore=$("#inventoryStoreFilter").value;
  $("#categoryFilter").innerHTML='<option value="">Todas las categorías</option>'+state.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");

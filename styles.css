@@ -111,3 +111,15 @@ button:disabled { opacity: .6; cursor: wait; }
 .parameter-group { margin-top: 28px; }
 .danger-zone { display: flex; flex-wrap: wrap; gap: 10px; }
 .danger-zone button { max-width: 100%; }
+
+/* V2.7 recipes */
+.recipe-form { display: flex; flex-wrap: wrap; gap: 14px; align-items: end; margin: 20px 0; }
+.recipe-form label { display: grid; gap: 8px; flex: 1 1 200px; min-width: 0; }
+.recipe-form select, .recipe-form input { width: 100%; max-width: 100%; }
+.recipe-menus { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 20px 0; }
+.recipe-menus p, #recipeDetail p, #recipeDetail li { line-height: 1.6; overflow-wrap: anywhere; }
+#recipeDetail { margin-top: 20px; }
+.recipe-warning { color: var(--danger); font-weight: 700; }
+#recipesView > p { line-height: 1.6; }
+@media(max-width:900px) { .recipe-menus { grid-template-columns: 1fr; } }
+@media(max-width:700px) { .tabs { grid-template-columns: repeat(2,minmax(0,1fr)); } }

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
   <meta name="theme-color" content="#f6f5f1"/>
   <title>Mercado Casa</title>
-  <link rel="stylesheet" href="styles.css?v=2.6"/>
+  <link rel="stylesheet" href="styles.css?v=2.7"/>
 </head>
 <body>
 <div id="app">
@@ -14,7 +14,7 @@
 <button class="tab active" data-view="inventory">Productos</button>
 <button class="tab" data-view="shopping">Compras <span id="shoppingBadge" class="badge">0</span></button>
 <button class="tab" data-view="parameters">Parámetros</button>
-</nav>
+<button class="tab" data-view="recipes">Recetas</button></nav>
 <main>
 <section id="inventoryView" class="view active">
 <div class="section-head"><h2 id="productsHeading">Productos</h2><button type="button" id="toggleArchived" class="ghost" aria-pressed="false">Archivados</button></div>
@@ -36,6 +36,19 @@
 <p>Productos activos y archivados, en cualquier estado de inventario.</p>
 <div class="search-field catalog-search"><input id="catalogSearch" aria-label="Buscar en todos los productos" placeholder="Buscar en todos los productos…"/><button type="button" id="clearCatalogSearch" class="clear-search hidden" aria-label="Borrar búsqueda del catálogo">×</button></div>
 <p id="catalogCount" class="meta" aria-live="polite"></p><div id="catalogList" class="cards"></div>
+</section><section id="recipesView" class="view">
+<div class="section-head"><h2>¿Qué cocinamos?</h2></div>
+<p id="recipeInventory" aria-live="polite"></p>
+<p>Elige tus preferencias. Te propondremos tres menús de un recetario integrado, ordenados según los ingredientes disponibles. No se envían tus datos a servicios de inteligencia artificial.</p>
+<form id="recipePreferences" class="recipe-form">
+<label>¿Para qué comida?<select id="recipeMeal"><option value="breakfast">Desayuno</option><option value="lunch">Almuerzo</option><option value="dinner">Cena</option></select></label>
+<label>¿Qué proteína quieres?<select id="recipeProtein"><option value="eggs">Huevos</option><option value="chicken">Pollo</option><option value="beef">Carne de res</option><option value="tuna">Atún en conserva</option><option value="cheese">Queso</option><option value="lentils">Lentejas</option></select></label>
+<label>¿Qué acompañante quieres?<select id="recipeSide"><option value="arepa">Arepa</option><option value="bread">Pan</option><option value="rice">Arroz</option><option value="potato">Papa</option><option value="pasta">Pasta</option><option value="salad">Ensalada</option></select></label>
+<button type="submit" class="primary">Ver 3 opciones</button></form>
+<div id="recipeMenus" class="recipe-menus" aria-live="polite"></div>
+<section id="recipePeoplePanel" class="product-card hidden"><h3 id="recipeChosen"></h3><form id="recipePeopleForm" class="recipe-form"><label>¿Para cuántas personas? (1 a 20)<input type="number" id="recipePeople" min="1" max="20" step="1" required inputmode="numeric"/></label><button class="primary" type="submit">Generar receta</button></form></section>
+<div id="recipeDetail" aria-live="polite"></div>
+<p class="meta">Referencia de cocción: <a href="https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures" target="_blank" rel="noopener noreferrer">temperaturas mínimas de FoodSafety.gov</a>.</p>
 </section></main></div>
 <dialog id="nameDialog"><form method="dialog" id="nameForm" class="dialog-card"><h2>¿Quién está usando Mercado?</h2><p>El nombre se guarda en este dispositivo para identificar los cambios.</p><input id="nameInput" required maxlength="40" placeholder="Tu nombre"/><button class="primary" value="default">Continuar</button></form></dialog>
 <dialog id="productDialog"><form method="dialog" id="productForm" class="dialog-card"><h2 id="productDialogTitle">Nuevo producto</h2><input type="hidden" id="productId"/><label>Producto<input id="productName" required maxlength="100"/></label><label>Categoría<select id="productCategory" required></select></label><label>Reposición<select id="productReplenishment"><option value="automatic">Automática</option><option value="optional">Opcional</option></select></label><fieldset><legend>Tiendas habituales</legend><div id="productStores" class="check-grid"></div></fieldset><div id="archiveArea" class="danger-zone hidden"><button type="button" id="archiveProductBtn" class="danger-btn">Archivar producto</button><button type="button" id="deleteFromEdit" class="danger-btn">Eliminar definitivamente</button></div><div class="dialog-actions"><button class="ghost" value="cancel">Cancelar</button><button class="primary" value="default">Guardar</button></div></form></dialog>
@@ -48,5 +61,5 @@
 <p id="deleteProductError" role="alert" class="hidden"></p>
 <div class="dialog-actions"><button type="button" id="cancelDeleteProduct" class="ghost">Cancelar</button><button type="submit" id="confirmDeleteProduct" class="danger-btn">Eliminar definitivamente</button></div>
 </form></dialog>
-<div id="toast" class="toast"></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js?v=2.6"></script>
+<div id="toast" class="toast"></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js?v=2.7"></script><script src="recipes.js?v=2.7"></script>
 </body></html>
