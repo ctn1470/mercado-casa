@@ -64,6 +64,9 @@ function renderInventory(){
 }
 function renderShopping(){
  const sf=$("#storeFilter").value;const rows=activeProducts().filter(p=>{const a=activeShop(p);if(!a)return false;if(!sf)return true;return(p.product_stores||[]).some(x=>x.store_id===sf)});
+ const categoryName=p=>state.categories.find(c=>c.id===p.category_id)?.name||"Sin categoría";
+ const alphabet=new Intl.Collator("es",{sensitivity:"base",numeric:true});
+ rows.sort((a,b)=>alphabet.compare(categoryName(a),categoryName(b))||alphabet.compare(a.name,b.name)||alphabet.compare(a.brand||"",b.brand||""));
  const high=rows.filter(p=>activeShop(p).priority==="high"),med=rows.filter(p=>activeShop(p).priority==="medium");$("#highCount").textContent=high.length;$("#mediumCount").textContent=med.length;
  const html=arr=>arr.length?arr.map(p=>`<div class="shop-row"><div><div class="shop-name">${esc(productLabel(p))}</div><div class="shop-meta">${storeNames(p).map(esc).join(" · ")||"Sin tienda asignada"}</div></div><button class="primary bought" onclick="markBought('${p.id}')">✓ Comprado</button></div>`).join(""):'<div class="empty">No hay productos.</div>';
  $("#highList").innerHTML=html(high);$("#mediumList").innerHTML=html(med)
