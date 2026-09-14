@@ -5,7 +5,7 @@ const sb=supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
 let state={products:[],stores:[],categories:[],lowProduct:null,statusFilter:"",showArchived:false};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const normalizedName=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim().replace(/\s+/g," ");
-const productLabel=p=>p.name+(p.brand?" · "+p.brand:" · Sin marca");
+const productLabel=p=>p.name+(p.brand?" · "+p.brand:"");
 const proteinLabels={beef:"Res",chicken:"Pollo",pork:"Cerdo",fish:"Pescado",other:"Otros"};
 const userName=()=>localStorage.getItem("mercado_user")||"";
 function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -170,7 +170,7 @@ function updateMeatField(){
  if(!meat)$("#productProteinType").value="";
 }
 function renderBrands(){
- $("#selectedBrands").innerHTML=chosenBrands.length?chosenBrands.map((b,i)=>`<button type="button" class="ghost small" data-remove-brand="${i}" aria-label="Quitar marca ${esc(b)}">${esc(b)} ×</button>`).join(""):'<span class="meta">Sin marca</span>';
+ $("#selectedBrands").innerHTML=chosenBrands.length?chosenBrands.map((b,i)=>`<button type="button" class="ghost small" data-remove-brand="${i}" aria-label="Quitar marca ${esc(b)}">${esc(b)} ×</button>`).join(""):'';
  $("#selectedBrands").querySelectorAll('[data-remove-brand]').forEach(button=>button.onclick=()=>{chosenBrands.splice(Number(button.dataset.removeBrand),1);renderBrands()});
 }
 function addBrand(){

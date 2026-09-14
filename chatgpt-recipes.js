@@ -23,7 +23,7 @@ q('prepareChatRecipe').onclick=()=>{
  const p=state.products.find(p=>p.id===q('recipeProteinProduct').value&&!p.archived&&['enough','low'].includes(p.status));
  if(!p||!q('recipeProtein').value){message('Selecciona arriba un tipo de proteína y un producto disponible.');return;}
  const available=state.products.filter(p=>!p.archived&&['enough','low'].includes(p.status));
- const inventory=available.map(p=>({producto:p.name,marca:p.brand||'Sin marca',categoria:state.categories.find(c=>c.id===p.category_id)?.name||'Sin categoría',estado:p.status==='low'?'Queda poco':'Hay suficiente'}));
+ const inventory=available.map(p=>({producto:p.name,...(p.brand?{marca:p.brand}:{}),categoria:state.categories.find(c=>c.id===p.category_id)?.name||'Sin categoría',estado:p.status==='low'?'Queda poco':'Hay suficiente'}));
  q('chatRecipePrompt').value=`Ayúdame a cocinar con mi inventario de Mercado Casa.
 Comida: ${label('recipeMeal')}.
 Tipo de proteína: ${label('recipeProtein')}.
