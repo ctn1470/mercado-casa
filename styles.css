@@ -123,3 +123,18 @@ button:disabled { opacity: .6; cursor: wait; }
 #recipesView > p { line-height: 1.6; }
 @media(max-width:900px) { .recipe-menus { grid-template-columns: 1fr; } }
 @media(max-width:700px) { .tabs { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+
+/* V2.8 product variants and duplicate review */
+.brand-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.brand-chips button { max-width: 100%; overflow-wrap: anywhere; }
+.brand-entry { display: flex; flex-wrap: wrap; gap: 8px; }
+.brand-entry input { flex: 1 1 140px; min-width: 0; }
+.brand-entry button { flex: 1 1 120px; }
+#brandHelp { font-size: 12px; margin-top: 10px; }
+#productFormError { color: var(--danger); }
+#duplicateMatches { padding-left: 20px; overflow-wrap: anywhere; }
+.empty button { margin: 5px; max-width: 100%; overflow-wrap: anywhere; }
+.product-top > .row-actions { flex: 0 1 auto; }
+
+/* Manual ChatGPT exchange */
+.chatgpt-panel{margin:20px 0;min-width:0}.chatgpt-panel textarea{display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;font:inherit;padding:12px;margin:8px 0 12px;resize:vertical}.chatgpt-panel form{display:grid;gap:8px}.chatgpt-panel input{min-width:0;width:100%;box-sizing:border-box}.saved-recipe-text{white-space:pre-wrap;overflow-wrap:anywhere}.chatgpt-panel details{margin-top:16px;overflow-wrap:anywhere}.chatgpt-panel summary{cursor:pointer;font-weight:600}
