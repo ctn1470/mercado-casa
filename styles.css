@@ -148,3 +148,12 @@ button:disabled { opacity: .6; cursor: wait; }
 #shoppingCategories .shop-meta{flex:0 1 25%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
 #shoppingCategories .bought{flex:none;padding:8px 10px;min-height:44px}
 @media(max-width:600px){#shoppingCategories .shop-meta{display:none}#shoppingCategories .bought span{display:none}#shoppingCategories .bought{min-width:44px}}
+
+/* V2.11.2: inventory summary colors */
+.summary[data-status="enough"]{background:#e5f2e7;border-color:#b7d6bd}
+.summary[data-status="low"]{background:#fff3cd;border-color:#e5d28c}
+.summary[data-status="out"]{background:#fbe5e3;border-color:#e4b8b3}
+.summary[data-status] span{color:#465047}
+.summary[data-status].active{border-color:#344e3d;box-shadow:0 0 0 2px #344e3d,var(--shadow)}
+#summaryBuy{background:#3f8055;border-color:#3f8055;color:#fff}
+#summaryBuy span{color:#fff}
