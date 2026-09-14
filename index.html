@@ -4,20 +4,20 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
   <meta name="theme-color" content="#f6f5f1"/>
-  <title>Mercado Casa</title>
-  <link rel="stylesheet" href="styles.css?v=2.10.2"/>
+  <title>Casa Praktika - Mercado</title>
+  <link rel="stylesheet" href="styles.css?v=2.11"/>
 </head>
 <body>
 <div id="app">
-<header class="topbar"><div><div class="eyebrow">INVENTARIO FAMILIAR</div><h1>Mercado Casa</h1></div><button id="userBtn" class="ghost"></button></header>
+<header class="topbar"><div><div class="eyebrow">INVENTARIO FAMILIAR</div><h1>Casa Praktika - Mercado</h1></div><button id="userBtn" class="ghost"></button></header>
 <nav class="tabs">
 <button class="tab active" data-view="inventory">Productos</button>
 <button class="tab" data-view="shopping">Compras <span id="shoppingBadge" class="badge">0</span></button>
 <button class="tab" data-view="parameters">Parámetros</button>
-<button class="tab" data-view="recipes">Recetas</button></nav>
+</nav>
 <main>
 <section id="inventoryView" class="view active">
-<div class="section-head"><h2 id="productsHeading">Productos</h2><button type="button" id="toggleArchived" class="ghost" aria-pressed="false">Archivados</button></div>
+<div class="export-inventory"><button type="button" id="downloadInventory" class="ghost">↓ Descargar inventario para ChatGPT</button><p class="meta">Descarga un archivo de texto con tu inventario y las instrucciones para pedir recetas. Ábrelo y pega todo su contenido en ChatGPT.</p><p id="exportStatus" role="status"></p></div><div class="section-head"><h2 id="productsHeading">Productos</h2><button type="button" id="toggleArchived" class="ghost" aria-pressed="false">Archivados</button></div>
 <div class="summary-grid">
 <button type="button" class="summary" data-status="enough"><strong id="countEnough">0</strong><span>Hay suficiente</span></button>
 <button type="button" class="summary" data-status="low"><strong id="countLow">0</strong><span>Queda poco</span></button>
@@ -27,7 +27,7 @@
 <div class="filter-state-row"><button type="button" id="clearStatusFilter" class="ghost small hidden">Ver todos</button></div>
 <div class="toolbar"><div class="search-field"><input id="searchInput" aria-label="Buscar producto" placeholder="Buscar producto…"/><button type="button" id="clearSearch" class="clear-search hidden" aria-label="Borrar búsqueda" title="Borrar búsqueda">×</button></div><select id="categoryFilter"><option value="">Todas las categorías</option></select><select id="inventoryStoreFilter" aria-label="Filtrar inventario por tienda"><option value="">Todas las tiendas</option></select><button id="newProductBtn" class="primary">+ Producto</button></div><div id="inventoryList" class="cards"></div>
 </section>
-<section id="shoppingView" class="view"><div class="section-head"><div><div class="eyebrow">LISTA ACTIVA</div><h2>Compras</h2></div><select id="storeFilter"><option value="">Todas las tiendas</option></select></div><div class="priority-block"><h3>Prioridad alta <span id="highCount" class="badge danger">0</span></h3><div id="highList" class="shopping-list"></div></div><div class="priority-block"><h3>Prioridad media <span id="mediumCount" class="badge warn">0</span></h3><div id="mediumList" class="shopping-list"></div></div></section>
+<section id="shoppingView" class="view"><div class="section-head"><div><div class="eyebrow">LISTA ACTIVA</div><h2>Compras</h2></div><select id="storeFilter"><option value="">Todas las tiendas</option></select></div><div id="shoppingCategories"></div></section>
 <section id="parametersView" class="view"><h2>Parámetros</h2><p>Edita las tiendas y categorías de tus productos.</p><section id="storesView" class="parameter-group"><div class="section-head"><div><div class="eyebrow">CONFIGURACIÓN</div><h2>Tiendas</h2></div><button id="newStoreBtn" class="primary">+ Tienda</button></div><div id="storesList" class="store-list"></div></section>
 <section id="categoriesView" class="parameter-group"><div class="section-head"><div><div class="eyebrow">CONFIGURACIÓN</div><h2>Categorías</h2></div><button id="newCategoryBtn" class="primary">+ Categoría</button></div><div id="categoriesList" class="store-list"></div></section>
 </section><section id="archivedView" class="view"><div class="section-head"><div><div class="eyebrow">CATÁLOGO</div><h2>Productos archivados</h2><span id="archivedBadge"></span></div></div><div id="archivedList" class="cards"></div></section>
@@ -36,20 +36,6 @@
 <p>Productos activos y archivados, en cualquier estado de inventario.</p>
 <div class="search-field catalog-search"><input id="catalogSearch" aria-label="Buscar en todos los productos" placeholder="Buscar en todos los productos…"/><button type="button" id="clearCatalogSearch" class="clear-search hidden" aria-label="Borrar búsqueda del catálogo">×</button></div>
 <p id="catalogCount" class="meta" aria-live="polite"></p><div id="catalogList" class="cards"></div>
-</section><section id="recipesView" class="view">
-<div class="section-head"><h2>¿Qué cocinamos?</h2></div>
-<p id="recipeInventory" aria-live="polite"></p>
-<p>Elige tus preferencias. Te propondremos tres menús de un recetario integrado, ordenados según los ingredientes disponibles. No se envían tus datos a servicios de inteligencia artificial.</p>
-<form id="recipePreferences" class="recipe-form">
-<label>¿Para qué comida?<select id="recipeMeal"><option value="breakfast">Desayuno</option><option value="lunch">Almuerzo</option><option value="dinner">Cena</option></select></label>
-<label>¿Qué tipo de proteína quieres?<select id="recipeProtein" required><option value="">Selecciona un tipo disponible</option></select></label>
-<label>Producto y marca disponibles<select id="recipeProteinProduct" required><option value="">Selecciona primero el tipo</option></select></label>
-<p id="recipeProteinNotice" class="meta" aria-live="polite"></p><label>¿Qué acompañante quieres?<select id="recipeSide"><option value="arepa">Arepa</option><option value="bread">Pan</option><option value="rice">Arroz</option><option value="potato">Papa</option><option value="pasta">Pasta</option><option value="salad">Ensalada</option></select></label>
-<button type="submit" class="primary">Ver 3 opciones</button></form>
-<div id="recipeMenus" class="recipe-menus" aria-live="polite"></div>
-<section id="recipePeoplePanel" class="product-card hidden"><h3 id="recipeChosen"></h3><form id="recipePeopleForm" class="recipe-form"><label>¿Para cuántas personas? (1 a 20)<input type="number" id="recipePeople" min="1" max="20" step="1" required inputmode="numeric"/></label><button class="primary" type="submit">Generar receta</button></form></section>
-<div id="recipeDetail" aria-live="polite"></div>
-<p class="meta">Referencia de cocción: <a href="https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures" target="_blank" rel="noopener noreferrer">temperaturas mínimas de FoodSafety.gov</a>.</p>
 </section></main></div>
 <dialog id="nameDialog"><form method="dialog" id="nameForm" class="dialog-card"><h2>¿Quién está usando Mercado?</h2><p>El nombre se guarda en este dispositivo para identificar los cambios.</p><input id="nameInput" required maxlength="40" placeholder="Tu nombre"/><button class="primary" value="default">Continuar</button></form></dialog>
 <dialog id="productDialog"><form method="dialog" id="productForm" class="dialog-card"><h2 id="productDialogTitle">Nuevo producto</h2><input type="hidden" id="productId"/><label>Producto<input id="productName" required maxlength="100"/></label><label>Categoría<select id="productCategory" required></select></label><label id="proteinTypeField" class="hidden">Tipo de carne<select id="productProteinType"><option value="">Selecciona el tipo</option><option value="beef">Res</option><option value="chicken">Pollo</option><option value="pork">Cerdo</option><option value="fish">Pescado</option><option value="other">Otros</option></select></label>
@@ -66,5 +52,5 @@
 <p id="deleteProductError" role="alert" class="hidden"></p>
 <div class="dialog-actions"><button type="button" id="cancelDeleteProduct" class="ghost">Cancelar</button><button type="submit" id="confirmDeleteProduct" class="danger-btn">Eliminar definitivamente</button></div>
 </form></dialog>
-<div id="toast" class="toast"></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js?v=2.10.2"></script><script src="recipes.js?v=2.10.2"></script>
-<script src="chatgpt-recipes.js?v=2.10.2"></script></body></html>
+<div id="toast" class="toast"></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="app.js?v=2.11"></script>
+</body></html>
