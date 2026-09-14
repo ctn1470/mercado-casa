@@ -157,3 +157,5 @@ button:disabled { opacity: .6; cursor: wait; }
 .summary[data-status].active{border-color:#344e3d;box-shadow:0 0 0 2px #344e3d,var(--shadow)}
 #summaryBuy{background:#3f8055;border-color:#3f8055;color:#fff}
 #summaryBuy span{color:#fff}
+
+.purchase-confirm-bar{margin:12px 0;padding:12px;background:#e5f2e7;border-radius:12px}.purchase-confirm-bar p{margin:4px 0 10px;font-size:13px}#shoppingCategories .bought[aria-pressed="false"]{background:white;color:var(--ink);border-color:var(--line)}#shoppingCategories .bought[aria-pressed="true"]{background:#3f8055;color:white}#confirmPurchases:disabled{opacity:.55;cursor:default}

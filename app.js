@@ -24,6 +24,36 @@ document.getElementById('downloadInventory').onclick=async()=>{
   status.textContent='Archivo preparado. Ábrelo y pega todo el contenido en ChatGPT, o adjúntalo y escribe: Sigue el prompt incluido en el archivo.';
  }catch(error){status.textContent=error.message||'No se pudo descargar el inventario.';}finally{button.disabled=false;}
 };
+const purchaseSelectionKey='casa_praktika_selected_purchases_v212';
+let selectedPurchases=new Set(),confirmingPurchases=false;
+try{const ids=JSON.parse(localStorage.getItem(purchaseSelectionKey)||'[]');if(Array.isArray(ids))selectedPurchases=new Set(ids.filter(id=>typeof id==='string'));}catch{}
+function savePurchaseSelection(){try{localStorage.setItem(purchaseSelectionKey,JSON.stringify([...selectedPurchases]));}catch{document.getElementById('purchaseMessage').textContent='La selección se conservará solo mientras mantengas abierta esta página.';}}
+function reconcilePurchases(){
+ const active=new Set(activeProducts().map(p=>activeShop(p)?.id).filter(Boolean));
+ for(const id of selectedPurchases)if(!active.has(id))selectedPurchases.delete(id);
+ savePurchaseSelection();
+ const button=document.getElementById('confirmPurchases');button.disabled=confirmingPurchases||!selectedPurchases.size;button.textContent=confirmingPurchases?'Confirmando…':`Confirmar compra (${selectedPurchases.size})`;
+}
+function togglePurchase(id){
+ if(confirmingPurchases)return;
+ const p=activeProducts().find(p=>p.id===id),item=p&&activeShop(p);if(!item)return;
+ if(selectedPurchases.has(item.id))selectedPurchases.delete(item.id);else selectedPurchases.add(item.id);
+ document.getElementById('purchaseMessage').textContent='Selección pendiente de confirmar. Se guarda en este navegador.';renderShopping();
+}
+document.getElementById('confirmPurchases').onclick=async()=>{
+ if(confirmingPurchases||!selectedPurchases.size)return;
+ const rows=activeProducts().filter(p=>selectedPurchases.has(activeShop(p)?.id));
+ if(!confirm('¿Confirmar la compra de estos '+rows.length+' productos?\n\n'+rows.map(productLabel).join('\n')+'\n\nIncluye los seleccionados de todas las tiendas. Pasarán a Hay suficiente.'))return;
+ const ids=rows.map(p=>activeShop(p).id),message=document.getElementById('purchaseMessage');
+ confirmingPurchases=true;renderShopping();message.textContent='Confirmando compra…';
+ try{
+  const {data,error}=await sb.rpc('market_confirm_purchases_v212',{p_ids:ids,p_author:userName()});
+  if(error)throw error;
+  ids.forEach(id=>selectedPurchases.delete(id));savePurchaseSelection();
+  const refreshed=await loadAll();message.textContent=refreshed?`Compra confirmada: ${data} productos.`:'Compra confirmada. No se pudo recargar la lista; actualiza la página antes de continuar.';
+ }catch(error){message.textContent=error.code==='PGRST202'?'Falta ejecutar CONFIRMAR_COMPRAS_V2_12.sql en Supabase. La selección se conserva.':error.message||'No se pudo verificar la confirmación. Revisa la conexión y actualiza la lista antes de reintentar.';}
+ finally{confirmingPurchases=false;renderShopping();}
+};
 const userName=()=>localStorage.getItem("mercado_user")||"";
 function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1900)}
@@ -80,13 +110,14 @@ function renderInventory(){
  $("#clearStatusFilter").classList.toggle("hidden",!status)
 }
 function renderShopping(){
+ reconcilePurchases();
  const sf=$("#storeFilter").value;const rows=activeProducts().filter(p=>{const a=activeShop(p);if(!a)return false;if(!sf)return true;return(p.product_stores||[]).some(x=>x.store_id===sf)});
  const categoryName=p=>state.categories.find(c=>c.id===p.category_id)?.name||"Sin categoría";
  const alphabet=new Intl.Collator("es",{sensitivity:"base",numeric:true});
  rows.sort((a,b)=>alphabet.compare(categoryName(a),categoryName(b))||alphabet.compare(a.name,b.name)||alphabet.compare(a.brand||"",b.brand||""));
  const groups=new Map();
  for(const p of rows){const key=p.category_id||"";if(!groups.has(key))groups.set(key,{name:categoryName(p),products:[]});groups.get(key).products.push(p);}
- $("#shoppingCategories").innerHTML=groups.size?[...groups.values()].map(group=>`<section class="priority-block"><h3>${esc(group.name)} <span class="badge">${group.products.length}</span></h3><div class="shopping-list">${group.products.map(p=>`<div class="shop-row"><span class="priority-dot" role="img" aria-label="${activeShop(p).priority==="high"?"Prioridad alta":"Prioridad media"}" title="${activeShop(p).priority==="high"?"Prioridad alta":"Prioridad media"}">${activeShop(p).priority==="high"?"🔴":"🟡"}</span><span class="shop-name" title="${esc(productLabel(p))}">${esc(productLabel(p))}</span><span class="shop-meta" title="${storeNames(p).map(esc).join(" · ")}">${storeNames(p).map(esc).join(" · ")||"Sin tienda asignada"}</span><button class="primary bought" aria-label="Marcar ${esc(productLabel(p))} como comprado" onclick="markBought('${p.id}')">✓ <span>Comprado</span></button></div>`).join("")}</div></section>`).join(""):'<div class="empty">No hay productos.</div>';
+ $("#shoppingCategories").innerHTML=groups.size?[...groups.values()].map(group=>`<section class="priority-block"><h3>${esc(group.name)} <span class="badge">${group.products.length}</span></h3><div class="shopping-list">${group.products.map(p=>`<div class="shop-row"><span class="priority-dot" role="img" aria-label="${activeShop(p).priority==="high"?"Prioridad alta":"Prioridad media"}" title="${activeShop(p).priority==="high"?"Prioridad alta":"Prioridad media"}">${activeShop(p).priority==="high"?"🔴":"🟡"}</span><span class="shop-name" title="${esc(productLabel(p))}">${esc(productLabel(p))}</span><span class="shop-meta" title="${storeNames(p).map(esc).join(" · ")}">${storeNames(p).map(esc).join(" · ")||"Sin tienda asignada"}</span><button class="primary bought" aria-label="Seleccionar ${esc(productLabel(p))}" aria-pressed="${selectedPurchases.has(activeShop(p).id)}" ${confirmingPurchases?"disabled":""} onclick="togglePurchase('${p.id}')">${selectedPurchases.has(activeShop(p).id)?"✓":"○"} <span>${selectedPurchases.has(activeShop(p).id)?"Seleccionado":"Seleccionar"}</span></button></div>`).join("")}</div></section>`).join(""):'<div class="empty">No hay productos.</div>';
 
 }
 function renderStores(){$("#storesList").innerHTML=state.stores.map(s=>{const n=activeProducts().filter(p=>(p.product_stores||[]).some(x=>x.store_id===s.id)).length;return`<div class="store-row"><div><strong>${esc(s.name)}</strong><div class="meta">${n} producto${n===1?"":"s"}</div></div><div class="row-actions"><button class="ghost small" onclick="editStore('${s.id}')">Editar</button><button class="danger-btn small" onclick="deleteStore('${s.id}')">Eliminar</button></div></div>`}).join("")}
@@ -102,7 +133,7 @@ async function setStatus(id,status){
  else toast("Estado actualizado");await loadAll()
 }
 async function addManualShopping(id){const p=state.products.find(x=>x.id===id);if(!p)return;const priority=p.status==="out"?"high":"medium";const {error}=await upsertShopping(id,priority,true);if(error)return toast("No se pudo agregar");toast("Agregado a compras");await loadAll()}
-async function markBought(id){const {error}=await sb.from("products").update({status:"enough",updated_by:userName()}).eq("id",id);if(error)return toast("No se pudo actualizar");await sb.from("shopping_list").update({active:false,bought_by:userName(),bought_at:new Date().toISOString()}).eq("product_id",id).eq("active",true);toast("Compra registrada");await loadAll()}
+
 $("#archiveProductBtn").onclick=async()=>{const id=$("#productId").value;if(!id||!confirm("¿Archivar este producto? Dejará de aparecer en Inventario y Compras."))return;await sb.from("shopping_list").update({active:false}).eq("product_id",id).eq("active",true);const{error}=await sb.from("products").update({archived:true,archived_at:new Date().toISOString(),updated_by:userName()}).eq("id",id);if(error)return toast("No se pudo archivar");$("#productDialog").close();toast("Producto archivado");await loadAll()};
 async function restoreProduct(id){const{error}=await sb.from("products").update({archived:false,archived_at:null,updated_by:userName()}).eq("id",id);if(error)return toast("No se pudo reactivar");toast("Producto reactivado");await loadAll()}
 $("#lowYes").onclick=async e=>{e.preventDefault();const id=state.lowProduct;if(!id)return;await sb.from("products").update({status:"low",updated_by:userName()}).eq("id",id);await upsertShopping(id,"medium",true);$("#lowDialog").close();state.lowProduct=null;toast("Agregado a compras · prioridad media");await loadAll()};
