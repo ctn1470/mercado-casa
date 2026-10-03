@@ -54,6 +54,19 @@ document.getElementById('confirmPurchases').onclick=async()=>{
  }catch(error){message.textContent=error.code==='PGRST202'?'Falta ejecutar CONFIRMAR_COMPRAS_V2_12.sql en Supabase. La selección se conserva.':error.message||'No se pudo verificar la confirmación. Revisa la conexión y actualiza la lista antes de reintentar.';}
  finally{confirmingPurchases=false;renderShopping();}
 };
+let historyRequest=0;
+async function loadPurchaseHistory(){
+ const request=++historyRequest,container=document.getElementById('purchaseHistoryList');
+ container.textContent='Cargando historial…';
+ try{
+  const {data,error}=await sb.from('purchase_sessions').select('id,created_at,author,items').order('created_at',{ascending:false}).order('id',{ascending:false}).limit(3);
+  if(request!==historyRequest)return;
+  if(error)throw error;
+  container.innerHTML=data?.length?data.map(session=>`<article class="purchase-session"><h3>${esc(new Date(session.created_at).toLocaleString('es-CO',{timeZone:'America/Bogota',dateStyle:'medium',timeStyle:'short'}))}</h3><p class="meta">Hora de Colombia · ${esc(session.author||'Sin nombre')} · ${session.items.length} artículos</p><ul>${session.items.map(item=>`<li>${esc(productLabel(item))} <span class="meta">(${esc(item.category)})</span></li>`).join('')}</ul></article>`).join(''):'<p>Aún no hay compras confirmadas registradas desde esta actualización.</p>';
+ }catch(error){if(request===historyRequest)container.textContent=['42P01','PGRST205'].includes(error.code)?'Falta instalar HISTORIAL_COMPRAS_V2_13.sql en Supabase.':'No se pudo cargar el historial. Pulsa Actualizar historial para reintentar.';}
+}
+document.getElementById('purchaseHistory').addEventListener('toggle',()=>{if(document.getElementById('purchaseHistory').open)loadPurchaseHistory();});
+document.getElementById('refreshPurchaseHistory').onclick=loadPurchaseHistory;
 const userName=()=>localStorage.getItem("mercado_user")||"";
 function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1900)}
@@ -68,7 +81,7 @@ async function loadAll(){
  if(se||ce||pe){console.error(se||ce||pe);toast("No se pudo cargar la información");return}
  state.stores=stores||[];state.categories=cats||[];state.products=products||[];renderAll();return true
 }
-function renderAll(){renderFilters();renderInventory();renderShopping();renderStores();renderCategories();renderArchived();renderCatalog();renderProductStoreChecks();$("#userBtn").textContent=userName()?userName()+" ▾":"Usuario"}
+function renderAll(){if(document.getElementById("purchaseHistory").open)loadPurchaseHistory();renderFilters();renderInventory();renderShopping();renderStores();renderCategories();renderArchived();renderCatalog();renderProductStoreChecks();$("#userBtn").textContent=userName()?userName()+" ▾":"Usuario"}
 function renderFilters(){
  const editingCat=$("#productCategory").value;
  const currentCat=$("#categoryFilter").value,currentStore=$("#storeFilter").value,currentInventoryStore=$("#inventoryStoreFilter").value;
