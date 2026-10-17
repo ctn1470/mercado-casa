@@ -311,7 +311,7 @@ async function persistProduct(allowDuplicate=false){
   showProductError(['PGRST202','42703'].includes(error.code)?"Falta aplicar la migración V2.8 en Supabase antes de guardar marcas y tipos de carne.":error.code==='23505'?"La base aún impide nombres repetidos. Revisa que la migración V2.8 esté completa.":error.message||"No se pudo guardar. Revisa la conexión y el catálogo antes de reintentar.");
  }finally{setProductSaving(false)}
 }
-$("#newProductBtn").onclick=()=>openNewProduct();
+$("#newProductBtn").onclick=()=>openNewProduct($("#searchInput").value.trim());
 $("#productCategory").onchange=updateMeatField;
 $("#addBrand").onclick=addBrand;
 $("#brandInput").onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addBrand()}};
