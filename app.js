@@ -47,26 +47,51 @@ document.getElementById('confirmPurchases').onclick=async()=>{
  const ids=rows.map(p=>activeShop(p).id),message=document.getElementById('purchaseMessage');
  confirmingPurchases=true;renderShopping();message.textContent='Confirmando compra…';
  try{
-  const {data,error}=await sb.rpc('market_confirm_purchases_v212',{p_ids:ids,p_author:userName()});
+  const {data,error}=await sb.rpc('market_confirm_purchases_v215',{p_ids:ids,p_author:userName()});
   if(error)throw error;
+  openPurchaseAmount(data.session_id,null);
   ids.forEach(id=>selectedPurchases.delete(id));savePurchaseSelection();
-  const refreshed=await loadAll();message.textContent=refreshed?`Compra confirmada: ${data} productos.`:'Compra confirmada. No se pudo recargar la lista; actualiza la página antes de continuar.';
- }catch(error){message.textContent=error.code==='PGRST202'?'Falta ejecutar CONFIRMAR_COMPRAS_V2_12.sql en Supabase. La selección se conserva.':error.message||'No se pudo verificar la confirmación. Revisa la conexión y actualiza la lista antes de reintentar.';}
+  const refreshed=await loadAll();message.textContent=refreshed?`Compra confirmada: ${data.count} productos.`:'Compra confirmada. No se pudo recargar la lista; actualiza la página antes de continuar.';
+ }catch(error){message.textContent=error.code==='PGRST202'?'Falta instalar la actualización de valores V2.15 en Supabase. La selección se conserva.':error.message||'No se pudo verificar la confirmación. Revisa la conexión y actualiza la lista antes de reintentar.';}
  finally{confirmingPurchases=false;renderShopping();}
 };
-let historyRequest=0;
-async function loadPurchaseHistory(){
- const request=++historyRequest,container=document.getElementById('purchaseHistoryList');
- container.textContent='Cargando historial…';
- try{
-  const {data,error}=await sb.from('purchase_sessions').select('id,created_at,author,items').order('created_at',{ascending:false}).order('id',{ascending:false}).limit(3);
-  if(request!==historyRequest)return;
-  if(error)throw error;
-  container.innerHTML=data?.length?data.map(session=>`<article class="purchase-session"><h3>${esc(new Date(session.created_at).toLocaleString('es-CO',{timeZone:'America/Bogota',dateStyle:'medium',timeStyle:'short'}))}</h3><p class="meta">Hora de Colombia · ${esc(session.author||'Sin nombre')} · ${session.items.length} artículos</p><ul>${session.items.map(item=>`<li>${esc(productLabel(item))} <span class="meta">(${esc(item.category)})</span></li>`).join('')}</ul></article>`).join(''):'<p>Aún no hay compras confirmadas registradas desde esta actualización.</p>';
- }catch(error){if(request===historyRequest)container.textContent=['42P01','PGRST205'].includes(error.code)?'Falta instalar HISTORIAL_COMPRAS_V2_13.sql en Supabase.':'No se pudo cargar el historial. Pulsa Actualizar historial para reintentar.';}
+let historyRequest=0,amountSession=null,amountSaving=false;
+const money=value=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:2}).format(Number(value));
+const purchaseDate=value=>new Date(value).toLocaleString('es-CO',{timeZone:'America/Bogota',dateStyle:'medium',timeStyle:'short'});
+function openPurchaseAmount(id,amount){
+ amountSession=id;$('#amountPaid').value=amount??'';$('#amountError').textContent='';$('#amountContext').textContent='Registra el total pagado por esta compra, en pesos colombianos.';$('#amountDialog').showModal();$('#amountPaid').focus();
 }
-document.getElementById('purchaseHistory').addEventListener('toggle',()=>{if(document.getElementById('purchaseHistory').open)loadPurchaseHistory();});
-document.getElementById('refreshPurchaseHistory').onclick=loadPurchaseHistory;
+$('#cancelAmount').onclick=()=>{if(!amountSaving)$('#amountDialog').close();};
+$('#amountDialog').addEventListener('cancel',event=>{if(amountSaving)event.preventDefault();});
+$('#amountForm').onsubmit=async event=>{
+ event.preventDefault();if(amountSaving)return;
+ const raw=$('#amountPaid').value.trim(),value=Number(raw);
+ if(!raw||!Number.isFinite(value)||value<0||value>=1e12||Math.abs(value*100-Math.round(value*100))>0.01){$('#amountError').textContent='Escribe un valor válido con máximo dos decimales, sin puntos de miles.';return;}
+ amountSaving=true;$('#saveAmount').disabled=true;$('#cancelAmount').disabled=true;
+ try{
+  const {data,error}=await sb.from('purchase_sessions').update({amount_paid:value}).eq('id',amountSession).select('id');
+  if(error)throw error;if(data?.length!==1)throw new Error('No se encontró la compra para guardar el valor.');
+  $('#amountDialog').close();await loadPurchaseHistory();toast('Valor guardado');
+ }catch(error){$('#amountError').textContent=error.message||'No se pudo guardar. Puedes reintentar.';}
+ finally{amountSaving=false;$('#saveAmount').disabled=false;$('#cancelAmount').disabled=false;}
+};
+async function loadPurchaseHistory(){
+ const request=++historyRequest,month=$('#purchaseMonth').value;
+ $('#purchaseBudget').textContent='Actualizando valores…';
+ try{
+  const {data,error}=await sb.rpc('market_purchase_report_v215',{p_month:month?month+'-01':null});
+  if(request!==historyRequest)return;if(error)throw error;
+  if(!month)$('#purchaseMonth').value=data.month;
+  $('#purchaseBudget').innerHTML=`<p class="budget-total">${money(data.total)} <small>COP</small></p><p>${data.missing?`Acumulado parcial: ${data.missing} compra(s) sin valor registrado.`:'Total registrado del mes.'}</p><p class="meta">Incluye todas las compras del mes seleccionado, según la fecha de confirmación en Colombia.</p>`;
+  const render=(sessions,monthly)=>sessions.length?sessions.map(session=>`<article class="purchase-session"><h3>${esc(purchaseDate(session.created_at))}</h3><p class="meta">${esc(session.author||'Sin nombre')} · ${session.items.length} artículos</p><p><strong>${session.amount_paid==null?'Valor pendiente':money(session.amount_paid)+' COP'}</strong>${monthly?` · Acumulado registrado: ${money(session.accumulated)}`:''}</p><button type="button" class="ghost small" data-amount-id="${esc(session.id)}">${session.amount_paid==null?'Registrar valor':'Corregir valor'}</button><details><summary>Ver artículos</summary><ul>${session.items.map(item=>`<li>${esc(productLabel(item))} <span class="meta">(${esc(item.category)})</span></li>`).join('')}</ul></details></article>`).join(''):'<p>No hay compras registradas en este período.</p>';
+  $('#monthlyPurchaseList').innerHTML=render(data.monthly,true);$('#purchaseHistoryList').innerHTML=render(data.recent,false);
+  for(const button of $$('[data-amount-id]'))button.onclick=()=>{const session=[...data.recent,...data.monthly].find(s=>s.id===button.dataset.amountId);openPurchaseAmount(session.id,session.amount_paid);};
+ }catch(error){console.error('Purchase report:',error);if(request!==historyRequest)return;$('#purchaseBudget').textContent='No se pudieron consultar los valores. Pulsa Actualizar para reintentar.';$('#monthlyPurchaseList').textContent='';$('#purchaseHistoryList').textContent='No se pudo cargar el historial.';}
+}
+$('#purchaseMonth').onchange=loadPurchaseHistory;
+$('#refreshPurchaseBudget').onclick=loadPurchaseHistory;
+$('#refreshPurchaseHistory').onclick=loadPurchaseHistory;
+$('#purchaseHistory').addEventListener('toggle',()=>{if($('#purchaseHistory').open)loadPurchaseHistory();});
 const userName=()=>localStorage.getItem("mercado_user")||"";
 function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1900)}
@@ -81,7 +106,7 @@ async function loadAll(){
  if(se||ce||pe){console.error(se||ce||pe);toast("No se pudo cargar la información");return}
  state.stores=stores||[];state.categories=cats||[];state.products=products||[];renderAll();return true
 }
-function renderAll(){if(document.getElementById("purchaseHistory").open)loadPurchaseHistory();renderFilters();renderInventory();renderShopping();renderStores();renderCategories();renderArchived();renderCatalog();renderProductStoreChecks();$("#userBtn").textContent=userName()?userName()+" ▾":"Usuario"}
+function renderAll(){loadPurchaseHistory();renderFilters();renderInventory();renderShopping();renderStores();renderCategories();renderArchived();renderCatalog();renderProductStoreChecks();$("#userBtn").textContent=userName()?userName()+" ▾":"Usuario"}
 function renderFilters(){
  const editingCat=$("#productCategory").value;
  const currentCat=$("#categoryFilter").value,currentStore=$("#storeFilter").value,currentInventoryStore=$("#inventoryStoreFilter").value;
@@ -188,7 +213,7 @@ $("#clearSearch").onclick=()=>{$("#searchInput").value="";renderInventory();$("#
 $("#inventoryStoreFilter").onchange=renderInventory;
 $("#searchInput").oninput=renderInventory;$("#categoryFilter").onchange=renderInventory;$("#storeFilter").onchange=renderShopping;$("#userBtn").onclick=()=>{$("#nameInput").value=userName();$("#nameDialog").showModal()};
 $("#nameForm").addEventListener("submit",e=>{e.preventDefault();const n=$("#nameInput").value.trim();if(!n)return;localStorage.setItem("mercado_user",n);$("#nameDialog").close();renderAll()});
-function startRealtime(){let timer;const refresh=()=>{clearTimeout(timer);timer=setTimeout(loadAll,250)};sb.channel('mercado-casa-v2').on('postgres_changes',{event:'*',schema:'public',table:'products'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'shopping_list'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'product_stores'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'stores'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'categories'},refresh).subscribe()}
+function startRealtime(){let timer;const refresh=()=>{clearTimeout(timer);timer=setTimeout(loadAll,250)};sb.channel('mercado-casa-v2').on('postgres_changes',{event:'*',schema:'public',table:'products'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'shopping_list'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'product_stores'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'stores'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'categories'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'purchase_sessions'},()=>loadPurchaseHistory()).subscribe()}
 if(!userName())$("#nameDialog").showModal();loadAll();startRealtime();
 
 // Complete catalog is independent of the inventory filters.

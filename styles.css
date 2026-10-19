@@ -163,3 +163,5 @@ button:disabled { opacity: .6; cursor: wait; }
 .purchase-history{margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:12px}.purchase-history summary{cursor:pointer;font-weight:700;min-height:32px}.purchase-session{padding:14px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.purchase-session h3{font-size:15px}.purchase-session ul{padding-left:20px}.purchase-session li{margin:7px 0}
 
 #shoppingCategories .skip-purchase{flex:none;font-size:12px;padding:7px;min-height:44px;white-space:nowrap}@media(max-width:600px){#shoppingCategories .shop-row{gap:5px;padding:7px}#shoppingCategories .shop-name{font-size:13px}}
+
+.purchase-budget{padding:16px;background:#e5f2e7;border-radius:14px;margin:14px 0}.purchase-budget h3{margin-bottom:12px}.purchase-budget input{max-width:100%;margin:4px}.budget-total{font-size:28px;font-weight:800;margin:12px 0}.budget-total small{font-size:13px}.purchase-budget details summary{cursor:pointer}.purchase-session p{overflow-wrap:anywhere}
