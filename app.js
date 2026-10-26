@@ -92,6 +92,22 @@ $('#purchaseMonth').onchange=loadPurchaseHistory;
 $('#refreshPurchaseBudget').onclick=loadPurchaseHistory;
 $('#refreshPurchaseHistory').onclick=loadPurchaseHistory;
 $('#purchaseHistory').addEventListener('toggle',()=>{if($('#purchaseHistory').open)loadPurchaseHistory();});
+const shoppingAddBusy=new Set();
+function renderShoppingSearch(){
+ const q=normalizedName($('#shoppingProductSearch').value),container=$('#shoppingProductResults');
+ if(!q){container.innerHTML='<p class="meta">Escribe para encontrar un producto.</p>';return;}
+ const matches=activeProducts().filter(p=>normalizedName(productLabel(p)).includes(q)).sort((a,b)=>productLabel(a).localeCompare(productLabel(b),'es'));
+ container.innerHTML=matches.length?matches.slice(0,30).map(p=>`<div class="shopping-search-row"><div><strong>${esc(productLabel(p))}</strong><p class="meta">${esc(state.categories.find(c=>c.id===p.category_id)?.name||'Sin categoría')}</p></div><button type="button" class="ghost small" data-add-shopping="${esc(p.id)}" ${isInShopping(p)||shoppingAddBusy.has(p.id)?'disabled':''}>${isInShopping(p)?'Ya está en Compras':shoppingAddBusy.has(p.id)?'Agregando…':'Agregar'}</button></div>`).join('')+(matches.length>30?'<p class="meta">Hay más coincidencias. Escribe un nombre más preciso.</p>':''):'<p>No hay productos activos que coincidan con la búsqueda.</p>';
+ for(const button of container.querySelectorAll('[data-add-shopping]'))button.onclick=async()=>{
+  const id=button.dataset.addShopping,p=state.products.find(p=>p.id===id);if(!p||isInShopping(p)||shoppingAddBusy.has(id))return;
+  shoppingAddBusy.add(id);renderShoppingSearch();$('#shoppingAddMessage').textContent='';
+  try{const saved=await addManualShopping(id);$('#shoppingAddMessage').textContent=saved?`${productLabel(p)} agregado a Compras.`:'No se pudo agregar. Revisa la conexión e inténtalo de nuevo.';}
+  catch{$('#shoppingAddMessage').textContent='No se pudo verificar el guardado. Actualiza antes de reintentar.';}
+  finally{shoppingAddBusy.delete(id);renderShoppingSearch();}
+ };
+}
+$('#shoppingProductSearch').oninput=renderShoppingSearch;
+$('#addShoppingPanel').addEventListener('toggle',()=>{if($('#addShoppingPanel').open)$('#shoppingProductSearch').focus();});
 const userName=()=>localStorage.getItem("mercado_user")||"";
 function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1900)}
@@ -148,6 +164,7 @@ function renderInventory(){
  $("#clearStatusFilter").classList.toggle("hidden",!status)
 }
 function renderShopping(){
+ renderShoppingSearch();
  reconcilePurchases();
  const sf=$("#storeFilter").value;const rows=activeProducts().filter(p=>{const a=activeShop(p);if(!a)return false;if(!sf)return true;return(p.product_stores||[]).some(x=>x.store_id===sf)});
  const categoryName=p=>state.categories.find(c=>c.id===p.category_id)?.name||"Sin categoría";
@@ -182,7 +199,7 @@ async function skipPurchase(id){
  }catch(error){message.textContent=error.code==='PGRST202'?'Falta instalar NO_COMPRAR_V2_14.sql en Supabase.':error.message||'No se pudo retirar el producto. Actualiza la lista y vuelve a intentarlo.';}
  finally{confirmingPurchases=false;renderShopping();}
 }
-async function addManualShopping(id){const p=state.products.find(x=>x.id===id);if(!p)return;const priority=p.status==="out"?"high":"medium";const {error}=await upsertShopping(id,priority,true);if(error)return toast("No se pudo agregar");toast("Agregado a compras");await loadAll()}
+async function addManualShopping(id){const p=state.products.find(x=>x.id===id);if(!p)return;const priority=p.status==="out"?"high":"medium";const {error}=await upsertShopping(id,priority,true);if(error)return toast("No se pudo agregar");toast("Agregado a compras");await loadAll();return true}
 
 $("#archiveProductBtn").onclick=async()=>{const id=$("#productId").value;if(!id||!confirm("¿Archivar este producto? Dejará de aparecer en Inventario y Compras."))return;await sb.from("shopping_list").update({active:false}).eq("product_id",id).eq("active",true);const{error}=await sb.from("products").update({archived:true,archived_at:new Date().toISOString(),updated_by:userName()}).eq("id",id);if(error)return toast("No se pudo archivar");$("#productDialog").close();toast("Producto archivado");await loadAll()};
 async function restoreProduct(id){const{error}=await sb.from("products").update({archived:false,archived_at:null,updated_by:userName()}).eq("id",id);if(error)return toast("No se pudo reactivar");toast("Producto reactivado");await loadAll()}
