@@ -167,3 +167,12 @@ button:disabled { opacity: .6; cursor: wait; }
 .purchase-budget{padding:16px;background:#e5f2e7;border-radius:14px;margin:14px 0}.purchase-budget h3{margin-bottom:12px}.purchase-budget input{max-width:100%;margin:4px}.budget-total{font-size:28px;font-weight:800;margin:12px 0}.budget-total small{font-size:13px}.purchase-budget details summary{cursor:pointer}.purchase-session p{overflow-wrap:anywhere}
 
 .add-shopping{margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:12px}.add-shopping summary{font-weight:750;cursor:pointer;padding:8px 0}.add-shopping label{display:block;margin:10px 0 6px}#shoppingProductSearch{width:100%;min-width:0}.shopping-search-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.shopping-search-row>div{min-width:0;overflow-wrap:anywhere}.shopping-search-row button{flex-shrink:0;min-height:44px}.shopping-search-row button:disabled{opacity:.6;cursor:default}#shoppingProductResults{max-height:320px;overflow-y:auto}#purchaseHistory{margin-top:24px}
+.expenses-table-scroll{max-width:100%;overflow-x:auto;margin-top:16px;background:#fff;border-radius:10px}
+.expenses-table{width:100%;min-width:700px;border-collapse:collapse;font-size:14px}
+.expenses-table caption{text-align:left;padding:12px;font-weight:700}
+.expenses-table th,.expenses-table td{padding:12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+.expenses-table thead,.expenses-table tfoot{background:#edf4ef}
+.expenses-table .amount-cell{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.expenses-table tbody tr:nth-child(even){background:#fafbf9}
+.expenses-table summary{white-space:nowrap;cursor:pointer}
+.expenses-table ul{padding-left:18px;min-width:160px}
