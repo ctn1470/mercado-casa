@@ -92,12 +92,15 @@ $('#purchaseMonth').onchange=loadPurchaseHistory;
 $('#refreshPurchaseBudget').onclick=loadPurchaseHistory;
 $('#refreshPurchaseHistory').onclick=loadPurchaseHistory;
 $('#purchaseHistory').addEventListener('toggle',()=>{if($('#purchaseHistory').open)loadPurchaseHistory();});
+let productEditorFromShopping=false,createForShopping=false;
 const shoppingAddBusy=new Set();
 function renderShoppingSearch(){
  const q=normalizedName($('#shoppingProductSearch').value),container=$('#shoppingProductResults');
  if(!q){container.innerHTML='<p class="meta">Escribe para encontrar un producto.</p>';return;}
  const matches=activeProducts().filter(p=>normalizedName(productLabel(p)).includes(q)).sort((a,b)=>productLabel(a).localeCompare(productLabel(b),'es'));
  container.innerHTML=matches.length?matches.slice(0,30).map(p=>`<div class="shopping-search-row"><div><strong>${esc(productLabel(p))}</strong><p class="meta">${esc(state.categories.find(c=>c.id===p.category_id)?.name||'Sin categoría')}</p></div><button type="button" class="ghost small" data-add-shopping="${esc(p.id)}" ${isInShopping(p)||shoppingAddBusy.has(p.id)?'disabled':''}>${isInShopping(p)?'Ya está en Compras':shoppingAddBusy.has(p.id)?'Agregando…':'Agregar'}</button></div>`).join('')+(matches.length>30?'<p class="meta">Hay más coincidencias. Escribe un nombre más preciso.</p>':''):'<p>No hay productos activos que coincidan con la búsqueda.</p>';
+ container.insertAdjacentHTML('beforeend','<button type="button" class="primary small" id="createShoppingSearch">＋ Crear producto nuevo con este nombre</button>');
+ $('#createShoppingSearch').onclick=createShoppingProduct;
  for(const button of container.querySelectorAll('[data-add-shopping]'))button.onclick=async()=>{
   const id=button.dataset.addShopping,p=state.products.find(p=>p.id===id);if(!p||isInShopping(p)||shoppingAddBusy.has(id))return;
   shoppingAddBusy.add(id);renderShoppingSearch();$('#shoppingAddMessage').textContent='';
@@ -169,10 +172,10 @@ function renderShopping(){
  const sf=$("#storeFilter").value;const rows=activeProducts().filter(p=>{const a=activeShop(p);if(!a)return false;if(!sf)return true;return(p.product_stores||[]).some(x=>x.store_id===sf)});
  const categoryName=p=>state.categories.find(c=>c.id===p.category_id)?.name||"Sin categoría";
  const alphabet=new Intl.Collator("es",{sensitivity:"base",numeric:true});
- rows.sort((a,b)=>Number(selectedPurchases.has(activeShop(a).id))-Number(selectedPurchases.has(activeShop(b).id))||alphabet.compare(categoryName(a),categoryName(b))||alphabet.compare(a.name,b.name)||alphabet.compare(a.brand||"",b.brand||""));
+ rows.sort((a,b)=>Number(selectedPurchases.has(activeShop(a).id))-Number(selectedPurchases.has(activeShop(b).id))||($("#shoppingSort").value==="category"?alphabet.compare(categoryName(a),categoryName(b)):0)||alphabet.compare(a.name,b.name)||alphabet.compare(a.brand||"",b.brand||""));
  const groups=new Map();
- for(const p of rows){const selected=selectedPurchases.has(activeShop(p).id);const key=selected?"selected-purchases":p.category_id||"";if(!groups.has(key))groups.set(key,{name:selected?"Seleccionados por confirmar":categoryName(p),products:[]});groups.get(key).products.push(p);}
- $("#shoppingCategories").innerHTML=groups.size?[...groups.values()].map(group=>`<section class="priority-block"><h3>${esc(group.name)} <span class="badge">${group.products.length}</span></h3><div class="shopping-list">${group.products.map(p=>`<div class="shop-row"><span class="priority-dot" role="img" aria-label="${activeShop(p).priority==="high"?"Prioridad alta":"Prioridad media"}" title="${activeShop(p).priority==="high"?"Prioridad alta":"Prioridad media"}">${activeShop(p).priority==="high"?"🔴":"🟡"}</span><span class="shop-name" title="${esc(productLabel(p))}">${esc(productLabel(p))}</span><span class="shop-meta" title="${storeNames(p).map(esc).join(" · ")}">${storeNames(p).map(esc).join(" · ")||"Sin tienda asignada"}</span><button class="primary bought" aria-label="Seleccionar ${esc(productLabel(p))}" aria-pressed="${selectedPurchases.has(activeShop(p).id)}" ${confirmingPurchases?"disabled":""} onclick="togglePurchase('${p.id}')">${selectedPurchases.has(activeShop(p).id)?"✓":"○"} <span>${selectedPurchases.has(activeShop(p).id)?"Seleccionado":"Seleccionar"}</span></button><button type="button" class="ghost skip-purchase" ${confirmingPurchases?"disabled":""} onclick="skipPurchase('${p.id}')" aria-label="No comprar ${esc(productLabel(p))}">No comprar</button></div>`).join("")}</div></section>`).join(""):'<div class="empty">No hay productos.</div>';
+ for(const p of rows){const selected=selectedPurchases.has(activeShop(p).id);const key=selected?"selected-purchases":$("#shoppingSort").value==="alphabetical"?"alphabetical":p.category_id||"";if(!groups.has(key))groups.set(key,{name:selected?"Seleccionados por confirmar":$("#shoppingSort").value==="alphabetical"?"Productos por nombre":categoryName(p),products:[]});groups.get(key).products.push(p);}
+ $("#shoppingCategories").innerHTML=groups.size?[...groups.values()].map(group=>`<section class="priority-block"><h3>${esc(group.name)} <span class="badge">${group.products.length}</span></h3><div class="shopping-list">${group.products.map(p=>`<div class="shop-row"><span class="priority-dot" role="img" aria-label="${activeShop(p).priority==="high"?"Prioridad alta":"Prioridad media"}" title="${activeShop(p).priority==="high"?"Prioridad alta":"Prioridad media"}">${activeShop(p).priority==="high"?"🔴":"🟡"}</span><span class="shop-name" title="${esc(productLabel(p))}">${esc(productLabel(p))}</span><span class="shop-meta" title="${storeNames(p).map(esc).join(" · ")}">${storeNames(p).map(esc).join(" · ")||"Sin tienda asignada"}</span><button class="primary bought" aria-label="Seleccionar ${esc(productLabel(p))}" aria-pressed="${selectedPurchases.has(activeShop(p).id)}" ${confirmingPurchases?"disabled":""} onclick="togglePurchase('${p.id}')">${selectedPurchases.has(activeShop(p).id)?"✓":"○"} <span>${selectedPurchases.has(activeShop(p).id)?"Seleccionado":"Seleccionar"}</span></button><button type="button" class="ghost shop-edit" aria-label="Editar ${esc(productLabel(p))}" onclick="openEditProduct('${p.id}')" ${confirmingPurchases?"disabled":""}>✎</button><button type="button" class="ghost skip-purchase" ${confirmingPurchases?"disabled":""} onclick="skipPurchase('${p.id}')" aria-label="No comprar ${esc(productLabel(p))}">No comprar</button></div>`).join("")}</div></section>`).join(""):'<div class="empty">No hay productos.</div>';
 
 }
 function renderStores(){$("#storesList").innerHTML=state.stores.map(s=>{const n=activeProducts().filter(p=>(p.product_stores||[]).some(x=>x.store_id===s.id)).length;return`<div class="store-row"><div><strong>${esc(s.name)}</strong><div class="meta">${n} producto${n===1?"":"s"}</div></div><div class="row-actions"><button class="ghost small" onclick="editStore('${s.id}')">Editar</button><button class="danger-btn small" onclick="deleteStore('${s.id}')">Eliminar</button></div></div>`}).join("")}
@@ -301,6 +304,7 @@ function addBrand(){
 function showProductError(message){$("#productFormError").textContent=message;$("#productFormError").classList.remove("hidden")}
 function prepareProductEditor(product,isCopy=false,name=""){
  if(productSaving)return;
+ productEditorFromShopping=$("#shoppingView").classList.contains("active");createForShopping=false;
  $("#productFormError").classList.add("hidden");
  $("#productDialogTitle").textContent=isCopy?"Duplicar producto":product?"Editar producto":"Nuevo producto";
  $("#productId").value=product&&!isCopy?product.id:"";
@@ -317,6 +321,9 @@ function prepareProductEditor(product,isCopy=false,name=""){
  pendingProduct=null;updateMeatField();$("#productDialog").showModal();
  $("#productName").focus();
 }
+function createShoppingProduct(){openNewProduct($("#shoppingProductSearch").value.trim());createForShopping=true;$("#newBrandStatus").value="out";const store=$("#storeFilter").value;if(store)renderProductStoreChecks([store]);}
+$("#newShoppingProduct").onclick=createShoppingProduct;
+$("#shoppingSort").onchange=renderShopping;
 function openNewProduct(name=""){prepareProductEditor(null,false,name)}
 function openEditProduct(id){const p=state.products.find(p=>p.id===id);if(p)prepareProductEditor(p)}
 function duplicateProduct(id){const p=state.products.find(p=>p.id===id);if(p)prepareProductEditor(p,true)}
@@ -347,7 +354,17 @@ async function persistProduct(allowDuplicate=false){
   if($("#duplicateDialog").open)$("#duplicateDialog").close();
   $("#productDialog").close();pendingProduct=null;
   state.showArchived=false;state.statusFilter="";$("#categoryFilter").value="";$("#inventoryStoreFilter").value="";$("#searchInput").value=name;
-  showView("inventory");toast("Producto guardado");await loadAll();
+  showView(productEditorFromShopping?"shopping":"inventory");toast("Producto guardado");
+  const loaded=await loadAll();
+  if(createForShopping){
+   createForShopping=false;
+   const ids=data.ids||[];
+   if(!loaded||!ids.length){$("#shoppingAddMessage").textContent="Producto creado. Actualiza y agrégalo desde el buscador de Compras.";return;}
+   let failed=false;
+   for(const id of ids){const p=state.products.find(p=>p.id===id);if(!p){failed=true;continue;}if(!isInShopping(p)){try{if(!await addManualShopping(id))failed=true;}catch{failed=true;}}}
+   $("#shoppingProductSearch").value=name;renderShoppingSearch();
+   $("#shoppingAddMessage").textContent=failed?"Producto creado, pero no se pudo agregar alguna marca a Compras. Usa Agregar en los resultados para reintentar.":"Producto creado y agregado a Compras.";
+  }
  }catch(error){
   if($("#duplicateDialog").open)$("#duplicateDialog").close();
   showProductError(['PGRST202','42703'].includes(error.code)?"Falta aplicar la migración V2.8 en Supabase antes de guardar marcas y tipos de carne.":error.code==='23505'?"La base aún impide nombres repetidos. Revisa que la migración V2.8 esté completa.":error.message||"No se pudo guardar. Revisa la conexión y el catálogo antes de reintentar.");
